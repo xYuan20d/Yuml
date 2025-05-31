@@ -25,8 +25,8 @@ from PyQt5.QtGui import QFont, QIcon
 from os.path import dirname, abspath
 from sys import stderr, path as spath
 from inspect import isclass, getmembers
-from yuqtDraw.YmlAPIS.python import YAPP
-from yuqtDraw.script.YuanGuiScript import Script  # 自定义语言
+from YUML.YmlAPIS.python import YAPP
+from YUML.script.YuanGuiScript import Script  # 自定义语言
 from os import chdir, environ, path, listdir, getpid
 from qframelesswindow import AcrylicWindow, FramelessWindow
 from importlib.util import spec_from_file_location, module_from_spec

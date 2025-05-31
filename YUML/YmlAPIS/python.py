@@ -9,7 +9,7 @@ class YAPP:
 class APIEngine:
 
     def __init__(self, raw):
-        from yuqtDraw.Yuml import LoadYmlFile, APIS  # 注意: import在开头会产生循环导入
+        from YUML.Yuml import LoadYmlFile, APIS  # 注意: import在开头会产生循环导入
         raw: tuple[LoadYmlFile, ...]
         self.self = raw[0]
         self.app: APIS.APP = raw[2]
