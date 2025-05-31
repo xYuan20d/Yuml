@@ -1,0 +1,9 @@
+PyQt5
+PyQt5-Frameless-Window
+json5
+PyYAML
+lupa
+jinja2
+ipython
+colorama
+psutil

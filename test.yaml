@@ -1,0 +1,68 @@
+run:
+  YuanGuiScript: |
+    $Lua | run
+    $app | setPython: "demo"
+    $app | setImportSelfPackageFolder: "packages"
+    $app | comImportPackage: "from PyQt5.QtWidgets import QPushButton", "QPushButton"
+    $app | setI18n: "lang", "zhCN.json5", "def.json5"
+    $app | setConsoleLog: "ID"
+    $app | openListenSystemColorMode
+    $app | createWindow
+    $app | run
+
+definedQss:
+  $button1:
+    color: red
+
+anchors: &buttonTemplate
+  show: true
+  height: 50
+  X: 1
+  width: "{< window.width() - 1 >} :int"
+
+windowCreated:
+  \>tr: app.i18n  # 创建全局变量“tr”并赋值app.i18n函数
+
+  button:
+    TestButton:
+      <<: *buttonTemplate
+      text: "{< tr(\"test_button\") >}"  # 调用i18n
+      Y: 50
+      id: button1
+      onClicked: TestButtonClicked
+
+  label:
+    title:
+      show: true
+      Y: 10
+      text: "示例"
+      lightStyle: |
+        color: black;
+      darkStyle: |
+        color: white;
+      width: 33
+      X: "{< window.width()//2 - title.width()//2 >} :int"
+
+  windowSize: {width: 300, height: 400}
+
+windowResized:
+  LuaScript: |
+    TestButton.resize(window.width()-1, TestButton.height())
+    title.move(window.width()//2-title.width()//2, title.y())
+
+TestButtonClicked:
+  \#TestButton.setText(r):
+
+lightMode:
+  QssStyle: |
+    QMainWindow {background: white;}
+
+darkMode:
+  QssStyle: |
+    QMainWindow {background: black;}
+
+test:
+  \>item: .accept
+  PythonScript: |
+    print(item)
+
