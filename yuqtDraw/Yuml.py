@@ -282,7 +282,7 @@ class APIS:
             if not self._is_debug_start:
                 color_init()
                 print(f"{Back.WHITE}{Style.BRIGHT}{Colors.MAGENTA}"
-                      f"Yuml Loader (c) YuanYuan | Version: {self.window.version}\n"
+                      f"Yuml Loader (c) Xiaoyy20d | Version: {self.window.version}\n"
                       f"<YML Debug Tool> - <v0.0.1beta> (仅用于调试目的, 请在生产环境关闭)\n"
                       f"{self.window.Symbols.SEPARATION}\n{Style.RESET_ALL}")
                 self._is_debug_start = True
