@@ -177,7 +177,7 @@ class APIS:
 
         def setImportSelfPackageFolder(self, folder: str):
             """
-            设置YML包导入文件夹(自定遍历目录里面的包)
+            设置YUML包导入文件夹(自定遍历目录里面的包)
             :param folder: 目录
             """
 
@@ -282,7 +282,7 @@ class APIS:
             if not self._is_debug_start:
                 color_init()
                 print(f"{Back.WHITE}{Style.BRIGHT}{Colors.MAGENTA}"
-                      f"Yuml Loader (c) Xiaoyy20d | Version: {self.window.version}\n"
+                      f"Yuml Loader (c) YY | Version: {self.window.version}\n"
                       f"<YML Debug Tool> - <v0.0.1beta> (仅用于调试目的, 请在生产环境关闭)\n"
                       f"{self.window.Symbols.SEPARATION}\n{Style.RESET_ALL}")
                 self._is_debug_start = True
@@ -448,7 +448,7 @@ class APIS:
 class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将它改为继承windowStyle
 
     class RWidgets:
-        def __init__(self, cw):
+        def __init__(self, cw: "LoadYmlFile.create_widget"):
             self.createWidget = cw
 
         def button(self, data, scope):
@@ -463,6 +463,9 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         def input(self, data, scope):
             self.createWidget("input", data, scope)
 
+        def yumlWidget(self, data, scope):
+            self.createWidget("YUML_WIDGET", data, scope)
+
         def dynamic(self, data, scope, obj):
             self.createWidget(obj, data, scope)
 
@@ -472,9 +475,10 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         SEPARATION = "--------------------"
 
 
-    def __init__(self, file_name: str, app: QApplication, load_str: bool = False):
+    def __init__(self, file_name: str, app: QApplication, load_str: bool = False,
+                 is_module: bool = False, _p=None):
         self.time = perf_counter()
-        super().__init__()
+        super().__init__(_p)
         self.version = (0, 0, 0, 1, "beta")
         self.python = None
         self.NN = lambda x: None
@@ -514,8 +518,12 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             warn("template在新版本中被移除, 使用yaml锚点实现相同功能", category=Warns.YuanDeprecatedWarn)
 
         self.definedQss()
-        for i in self.data["run"]:
-            self.main_block(i, "run")
+        if not is_module:
+            for i in self.data["run"]:
+                self.main_block(i, "run")
+        else:
+            for i in self.data["widget"]:
+                self.main_block(i, "widget")
 
     @staticmethod
     def load_module(module_name, file_path):
@@ -639,7 +647,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
         for _i in data:
             _widget = None
-            widget = widget_creators.get(widget_type, lambda: None)()
+            if widget_type == "YUML_WIDGET":
+                widget = LoadYmlFile(data[_i]["type"], self.app, _p=self, is_module=True)
+                del data[_i]["type"]
+            else:
+                widget = widget_creators.get(widget_type, lambda: None)()
             if not widget:
                 _widget = widget_type(self)
                 widget_type = widget_type.__name__
@@ -719,6 +731,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 self.cw.listBox(data, scope)
             case "input":
                 self.cw.input(data, scope)
+            case "YUML_WIDGET":
+                self.cw.yumlWidget(data, scope)
             case "YuanGuiScript":
                 Script(data, self._G)
             case "LuaScript":
