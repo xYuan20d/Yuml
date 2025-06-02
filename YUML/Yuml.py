@@ -19,7 +19,7 @@ from jinja2 import Template
 from threading import Thread
 from datetime import datetime
 from typing import Any as All
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QEvent, QObject
 from importlib import import_module
 from PyQt5.QtGui import QFont, QIcon
 from os.path import dirname, abspath
@@ -584,6 +584,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
             case "id":  widget.setObjectName(self.string(data[key]))
 
+            case "onMoved":  widget.moveEvent = lambda _: self.call_block(self.string(data[key]))
+
             case "darkStyle":
                 setattr(widget, "darkQssStyle", lambda _self, style=self.string(data[key]): _self.setStyleSheet(style))
 
@@ -605,7 +607,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 if load_package() is None:
                     _scope = deepcopy(scope)
                     _scope.append(name)
-                    print(key, _scope)
                     self.main_block(key, _scope)
 
     def create_widget(self, widget_type, data, scope):
@@ -669,7 +670,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 for mod in self.widget_add_block_module:
                     if mod.__name__ in (widget_type, "_YuGM_"):
                         mod_instance = mod(self, widget_type)
-                        if widget_type not in mod_instance.limit and mod_instance.limit:
+                        if (widget_type not in mod_instance.limit) and mod_instance.limit:
                             continue
                         try:
                             datas = mod_instance.realize(val)
@@ -816,14 +817,17 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
         self._is_create = True
 
-        if self.data.get("windowCreated") is None:
-            return
+        if self.data.get("windowCreated") is not None:
+            self.call_block("windowCreated")
 
-        self.call_block("windowCreated")
+            current = perf_counter()
+            self.info_print(f"启动用时: {current - self.time} {self.Symbols.RAW} "
+                            f"({current - start_time})\n{self.Symbols.SEPARATION}\n")
 
-        current = perf_counter()
-        self.info_print(f"启动用时: {current - self.time} {self.Symbols.RAW} "
-                        f"({current - start_time})\n{self.Symbols.SEPARATION}\n")
+    def moveEvent(self, a0):
+        super().moveEvent(a0)
+        if self.data.get("windowMoved") is not None:
+            self.call_block("windowMoved")
 
     def resizeEvent(self, a0):
         super().resizeEvent(a0)
