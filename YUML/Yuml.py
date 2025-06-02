@@ -182,6 +182,9 @@ class APIS:
             """
 
             for i in listdir(folder):
+                if i[0] == ".":
+                    self.window.debug_print(f"忽略包: {i}")
+                    continue
                 spath.append(path.join(folder, i))
                 module = self.window.load_module("main", path.join(folder, i, "main.py"))
 
@@ -669,7 +672,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 is_rep = False
                 for mod in self.widget_add_block_module:
                     if mod.__name__ in (widget_type, "_YuGM_"):
-                        mod_instance = mod(self, widget_type)
+                        mod_instance = mod(self, widget_type, widget)
                         if (widget_type not in mod_instance.limit) and mod_instance.limit:
                             continue
                         try:
