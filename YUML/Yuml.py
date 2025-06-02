@@ -19,7 +19,7 @@ from jinja2 import Template
 from threading import Thread
 from datetime import datetime
 from typing import Any as All
-from PyQt5.QtCore import QTimer, QEvent, QObject
+from PyQt5.QtCore import QTimer
 from importlib import import_module
 from PyQt5.QtGui import QFont, QIcon
 from os.path import dirname, abspath
