@@ -750,7 +750,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
                 def load_package():
                     for modules, handler in [
-                        (self.main_block_module, lambda _mod: _mod(data, {"LoadYmlFile": self})),
+                        (self.main_block_module, lambda _mod: _mod(data, self)),
                         (self.widget_block_module, lambda _mod: self.cw.dynamic(data, scope, _mod)),
                     ]:
                         for mod in modules:
@@ -826,8 +826,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
     def moveEvent(self, a0):
         super().moveEvent(a0)
-        if self.data.get("windowMoved") is not None:
-            self.call_block("windowMoved")
+        try:
+            if self.data.get("windowMoved") is not None:
+                self.call_block("windowMoved")
+        except AttributeError:
+            pass
 
     def resizeEvent(self, a0):
         super().resizeEvent(a0)
