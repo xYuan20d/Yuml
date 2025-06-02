@@ -23,9 +23,9 @@ from PyQt5.QtCore import QTimer
 from importlib import import_module
 from PyQt5.QtGui import QFont, QIcon
 from os.path import dirname, abspath
+from YUML.YmlAPIS.python import YAPP
 from sys import stderr, path as spath
 from inspect import isclass, getmembers
-from YUML.YmlAPIS.python import YAPP
 from YUML.script.YuanGuiScript import Script  # 自定义语言
 from os import chdir, environ, path, listdir, getpid
 from qframelesswindow import AcrylicWindow, FramelessWindow
@@ -605,6 +605,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 if load_package() is None:
                     _scope = deepcopy(scope)
                     _scope.append(name)
+                    print(key, _scope)
                     self.main_block(key, _scope)
 
     def create_widget(self, widget_type, data, scope):
