@@ -19,7 +19,6 @@ from jinja2 import Template
 from threading import Thread
 from datetime import datetime
 from typing import Any as All
-from PyQt5.QtCore import QTimer
 from importlib import import_module
 from PyQt5.QtGui import QFont, QIcon
 from os.path import dirname, abspath
@@ -27,6 +26,7 @@ from YUML.YmlAPIS.python import YAPP
 from sys import stderr, path as spath
 from inspect import isclass, getmembers
 from YUML.script.YuanGuiScript import Script  # 自定义语言
+from PyQt5.QtCore import QTimer, QObject, QEvent
 from os import chdir, environ, path, listdir, getpid
 from qframelesswindow import AcrylicWindow, FramelessWindow
 from importlib.util import spec_from_file_location, module_from_spec
@@ -79,6 +79,18 @@ class Warps:
                 return None
             return warp
         return decorator
+
+
+class MoveEventFilter(QObject):
+    def __init__(self, _widget, window, data):
+        super().__init__(_widget)
+        self.window = window
+        self.data = data
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Move:
+            self.window.call_block(self.window.string(self.data))
+        return False  # 保留原行为
 
 
 class Lua:
@@ -587,7 +599,9 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
             case "id":  widget.setObjectName(self.string(data[key]))
 
-            case "onMoved":  widget.moveEvent = lambda _: self.call_block(self.string(data[key]))
+            case "onMoved":
+
+                widget.installEventFilter(MoveEventFilter(widget, self, data[key]))
 
             case "darkStyle":
                 setattr(widget, "darkQssStyle", lambda _self, style=self.string(data[key]): _self.setStyleSheet(style))
