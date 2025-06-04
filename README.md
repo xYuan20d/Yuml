@@ -4,6 +4,8 @@
 
 Y语言("可译为YLang, Yuan language, Yuml等")
 
-专为gui而生的语言
+专为GUI而生的语言
 
-Package SDK: [传送门](https://github.com/lvzhiyuan0925/Yuml-Package-SDK)
+**暂未上传至PyPi**
+
+**Package SDK: [传送门](https://github.com/lvzhiyuan0925/Yuml-Package-SDK)**
