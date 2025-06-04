@@ -211,7 +211,8 @@ class APIS:
                     module.Y_NAMESPACE.YWidget: lambda _obj: self.window.widget_block_module.append(_obj),
                     module.Y_NAMESPACE.YLoad: lambda _obj: _obj(self.window),
                     module.Y_NAMESPACE.YWidgetBlock: lambda _obj: self.window.widgetBlock_block_module.append(_obj),
-                    module.Y_NAMESPACE.YAddWidgetAttribute: lambda _obj: self.window.widget_add_block_module.append(_obj)
+                    module.Y_NAMESPACE.YAddWidgetAttribute:
+                        lambda _obj: self.window.widget_add_block_module.append(_obj)
                 }
 
                 for name, obj in getmembers(module, isclass):
@@ -227,9 +228,7 @@ class APIS:
             for i in args:
                 split = i.split(" ")
                 name = split[1] if len(split) != 1 else split[0]
-
                 module = import_module(split[0])
-
                 self.window.API_G.globals(name, module)
 
         def comImportPackage(self, python_code: str, module_name: str):
@@ -613,6 +612,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         match key:
             case "show":  widget.setVisible(self.string(data[key]))
 
+            case "delGlobals":  self.API_G.delGlobals(self.string(data[key]))
+
             case "move":  widget.move(self.string(data[key]["x"]), self.string(data[key]["y"]))
 
             case "size":  widget.resize(self.string(data[key]["width"]), self.string(data[key]["height"]))
@@ -801,6 +802,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 self.lua.execute(data)
             case "QssStyle":
                 self.setStyleSheet(self.string(data))
+            case "callBlock":
+                data = [[self.string(x) for x in sublist] for sublist in data]
+
+                for i in data:
+                    self.call_block(*i)
             case "PythonScript":
                 exec(data, self.eval_globals)
 
@@ -827,9 +833,9 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                         for i in block_name[1:]:
                             if i == "notExec":
                                 break
-
                             else:
                                 self.error_print(f"`{i}`操作不存在", "NoCommandError")
+
                     else:
                         if load_package() is None:
                             self.error_print(f"没有名为`{block_name[0]}`的元素", "NoBlockError")
@@ -843,7 +849,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                         case ">":
                             if data == ".accept":
                                 self.API_G.globals(block, _accept)
-                            else: self.API_G.globals(block, eval(data, self.eval_globals))
+                            else:
+                                if isinstance(data, str):
+                                    self.API_G.globals(block, eval(data, self.eval_globals))
+                                else:
+                                    self.API_G.globals(block, data)
                         case "#":
                             if (data == "python") or (data is None):
                                 exec(block, self.eval_globals)
@@ -885,14 +895,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             self.info_print(f"启动用时: {current - self.time} {self.Symbols.RAW} "
                             f"({current - start_time})\n{self.Symbols.SEPARATION}\n")
 
-    def moveEvent(self, a0):
-        super().moveEvent(a0)
-        try:
-            if self.data.get("windowMoved") is not None:
-                self.call_block("windowMoved")
-        except AttributeError:
-            pass
-
     def resizeEvent(self, a0):
         super().resizeEvent(a0)
         if not self.execResizeEvent:
@@ -905,6 +907,14 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
     def hideEvent(self, a0):
         if self.data.get("windowHidden") is not None:
             self.call_block("windowHidden")
+
+    def moveEvent(self, a0):
+        super().moveEvent(a0)
+        try:
+            if self.data.get("windowMoved") is not None:
+                self.call_block("windowMoved")
+        except AttributeError:
+            pass
 
     def closeEvent(self, event):
         setattr(event, "Yes", event.accept)
