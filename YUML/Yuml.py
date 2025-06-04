@@ -508,6 +508,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self._is_create = False
         self.debug_print = self.NN
         self.info_print = self.NN
+        self.error_print = lambda x: print(f"错误: {x}", file=stderr)
         self.block = APIS.Block(self)
         self.API_APP = APIS.APP(self.app, self)
         self._G: dict = {"app": self.API_APP, "Console": APIS.Console(), "Lua": APIS.Lua(self.lua), "block":
@@ -547,8 +548,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         spec.loader.exec_module(module)
         return module
 
-    @staticmethod
-    def is_dark_mode():
+    def is_dark_mode(self):
         if system == "Darwin":
             try:
                 result = runcommand(
@@ -558,17 +558,17 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 )
                 return result.stdout.strip() == 'Dark'
             except Exception as e:
-                print(f"错误: {e}", file=stderr)
+                self.error_print(e)
                 return False
         elif system == "Windows":
             try:
                 key = OpenKey(HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
                 return QueryValueEx(key, "AppsUseLightTheme")[0] == 0  # 深色
             except Exception as e:
-                print(f"错误: 获取注册表出现了未知错误 {e}", file=stderr)
+                self.error_print(f"获取注册表出现了未知错误 {e}")
                 return False
         else:
-            print(f"错误: {system}不受深色模式支持", file=stderr)
+            self.error_print(f"{system}不受深色模式支持")
             return False
 
     def call_block(self, scope, accept=None):
@@ -787,10 +787,10 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                                 break
 
                             else:
-                                print(f"错误: `{i}`操作不存在", file=stderr)
+                                self.error_print(f"`{i}`操作不存在")
                     else:
                         if load_package() is None:
-                            print(f"错误: 没有名为`{block_name[0]}`的元素", file=stderr)
+                            self.error_print(f"没有名为`{block_name[0]}`的元素")
 
                 else:
                     block_name = block_name[1:]
