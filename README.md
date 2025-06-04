@@ -6,6 +6,8 @@ Y语言("可译为YLang, Yuan language, Yuml等")
 
 专为GUI而生的语言
 
-**暂未上传至PyPi**
+**请不要直接下载main分支的半成品源码**
+
+_**暂未上传至PyPi**_
 
 **Package SDK: [传送门](https://github.com/lvzhiyuan0925/Yuml-Package-SDK)**
