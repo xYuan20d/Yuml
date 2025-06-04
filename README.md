@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/lvzhiyuan0925/files/refs/heads/main/logo1.png" alt="Logo" width="200"/>
+  <img src="https://raw.githubusercontent.com/xYuan20d/files/refs/heads/main/logo1.png" alt="Logo" width="200"/>
 </p>
 
 # Yuml
@@ -19,14 +19,14 @@
 ## 🔧 Package SDK
 
 Yuml 的官方 SDK 请访问：  
-👉 [Yuml-Package-SDK GitHub 传送门](https://github.com/lvzhiyuan0925/Yuml-Package-SDK)
+👉 [Yuml-Package-SDK GitHub 传送门](https://github.com/xYuan20d/Yuml-Package-SDK)
 
 ---
 
 ## 📦 包仓库
 
 Yuml 的官方模块与库集合：  
-🧰 [Yuml-Packages GitHub 仓库](https://github.com/lvzhiyuan0925/Yuml-Packages)
+🧰 [Yuml-Packages GitHub 仓库](https://github.com/xYuan20d/Yuml-Packages)
 
 ---
 
