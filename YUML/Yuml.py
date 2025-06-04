@@ -148,6 +148,7 @@ class APIS:
         def __init__(self, app: QApplication, _window: "LoadYmlFile"):
             self.app: QApplication = app
             self.window = _window
+            self.notExecErrors = []
             self._i18n = ("lang", "zh_cn.json5", "default.json5")
             self._i18n_data: dict | None = None
             self._i18n_def_data = None
@@ -163,6 +164,9 @@ class APIS:
 
         def setFont(self, name, size):
             self.app.setFont(QFont(name, size))
+
+        def notExecError(self, error: str):
+            self.notExecErrors.append(error)
 
         def setPython(self, file: str):
             module = import_module(file)
@@ -508,7 +512,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self._is_create = False
         self.debug_print = self.NN
         self.info_print = self.NN
-        self.error_print = lambda x: print(f"错误: {x}", file=stderr)
         self.block = APIS.Block(self)
         self.API_APP = APIS.APP(self.app, self)
         self._G: dict = {"app": self.API_APP, "Console": APIS.Console(), "Lua": APIS.Lua(self.lua), "block":
@@ -548,6 +551,10 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         spec.loader.exec_module(module)
         return module
 
+    def error_print(self, msg: All, _id):
+        if _id not in self.API_APP.notExecErrors:
+            print(f"错误: {msg} ({_id})", file=stderr)
+
     def is_dark_mode(self):
         if system == "Darwin":
             try:
@@ -558,17 +565,17 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 )
                 return result.stdout.strip() == 'Dark'
             except Exception as e:
-                self.error_print(e)
+                self.error_print(e, "colorModeError")
                 return False
         elif system == "Windows":
             try:
                 key = OpenKey(HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
                 return QueryValueEx(key, "AppsUseLightTheme")[0] == 0  # 深色
             except Exception as e:
-                self.error_print(f"获取注册表出现了未知错误 {e}")
+                self.error_print(f"获取注册表出现了未知错误 {e}", "KeyError")
                 return False
         else:
-            self.error_print(f"{system}不受深色模式支持")
+            self.error_print(f"{system}不受深色模式支持", "colorModeSystemError")
             return False
 
     def call_block(self, scope, accept=None):
@@ -787,10 +794,10 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                                 break
 
                             else:
-                                self.error_print(f"`{i}`操作不存在")
+                                self.error_print(f"`{i}`操作不存在", "NoCommandError")
                     else:
                         if load_package() is None:
-                            self.error_print(f"没有名为`{block_name[0]}`的元素")
+                            self.error_print(f"没有名为`{block_name[0]}`的元素", "NoBlockError")
 
                 else:
                     block_name = block_name[1:]
@@ -896,7 +903,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 eval_result = eval(m.group(1).strip(), self.eval_globals)
                 return str(eval_result)
             except Exception as error:
-                self.error_print(error)
+                self.error_print(error, "StringError")
                 return ""
 
         _str = sub(r'\{\{<<(.*?)>>}}', r'{<\1>}', sub(r'\{<\s*([^>]+?)\s*>}', rep, s)).strip()
