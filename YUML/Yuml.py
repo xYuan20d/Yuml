@@ -663,7 +663,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 if load_package() is None:
                     _scope = deepcopy(scope)
                     _scope.append(name)
-                    self.main_block(key, _scope)
+                    self.main_block(key, _scope, _is_yuml_widget=True
+                    if (isinstance(widget, LoadYmlFile) and key=="type") else False)
 
     def create_widget(self, widget_type, data, scope):
         widget_creators = {
@@ -710,7 +711,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             _widget = None
             if widget_type == "YUML_WIDGET":
                 widget = LoadYmlFile(data[_i]["type"], self.app, _p=self, is_module=True)
-                del data[_i]["type"]
             else:
                 widget = widget_creators.get(widget_type, lambda: None)()
             if not widget:
@@ -751,7 +751,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 _scope = [scope, widget_type] if isinstance(scope, str) else deepcopy(scope).append(widget_type)
                 self.widget(key, data[_i], widget, _scope, widget.YUML_WIDGET_NAME)
 
-    def main_block(self, block_name: str, scope: str | list, _accept=None):
+    def main_block(self, block_name: str, scope: str | list, _accept=None, _is_yuml_widget = False):
         blocks = block_name.split("_")
         _block_name = blocks[0]
         if len(blocks) > 2:
@@ -838,7 +838,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
                     else:
                         if load_package() is None:
-                            self.error_print(f"没有名为`{block_name[0]}`的元素", "NoBlockError")
+                            if not _is_yuml_widget:
+                                self.error_print(f"没有名为`{block_name[0]}`的元素", "NoBlockError")
 
                 else:
                     block_name = block_name[1:]
