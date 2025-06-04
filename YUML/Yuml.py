@@ -896,7 +896,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 eval_result = eval(m.group(1).strip(), self.eval_globals)
                 return str(eval_result)
             except Exception as error:
-                print(error, file=stderr)
+                self.error_print(error)
                 return ""
 
         _str = sub(r'\{\{<<(.*?)>>}}', r'{<\1>}', sub(r'\{<\s*([^>]+?)\s*>}', rep, s)).strip()
