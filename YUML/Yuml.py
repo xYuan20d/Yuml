@@ -84,12 +84,13 @@ class Warps:
 class MoveEventFilter(QObject):
     def __init__(self, _widget, window, data):
         super().__init__(_widget)
+        self.widget = _widget
         self.window = window
         self.data = data
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Move:
-            self.window.call_block(self.window.string(self.data))
+            self.window.call_block(self.window.string(self.data), self.widget)
         return False  # 保留原行为
 
 
@@ -518,7 +519,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
 
     def __init__(self, file_name: str, app: QApplication, load_str: bool = False,
-                 is_module: bool = False, _p=None):
+                 is_module: bool = False, _p: QWidget | None = None):
         self.time = perf_counter()
         super().__init__(_p)
         self.version = (0, 0, 0, 1, "beta")
@@ -629,9 +630,17 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
             case "id":  widget.setObjectName(self.string(data[key]))
 
-            case "onMoved":
+            case "onMoved": widget.installEventFilter(MoveEventFilter(widget, self, data[key]))
 
-                widget.installEventFilter(MoveEventFilter(widget, self, data[key]))
+            case "name":
+                new_name = self.string(data[key])
+                self.API_G.globals(new_name, self.API_G.getGlobals(name))
+                self.API_G.delGlobals(name)
+                widget.YUML_WIDGET_NAME = new_name
+
+            case "onList":
+                self.API_G.getGlobals(self.string(data[key])).append(widget)
+                self.API_G.delGlobals(name)
 
             case "darkStyle":
                 setattr(widget, "darkQssStyle", lambda _self, style=self.string(data[key]): _self.setStyleSheet(style))
@@ -680,17 +689,20 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         attribute_handlers = {
             "text": lambda w, v: w.setText(self.string(v)),
             "enabled": lambda w, v: w.setEnabled(v),
-            "onClicked": lambda w, v: signalCall(w.clicked, lambda _, bid=self.string(v), _w=w: self.clicked(bid, _w)),
+            "onClicked": lambda w, v:
+                signalCall(w.clicked, lambda _, bid=self.string(v), _w=w: self.clicked(bid, _w, _w)),
             "items": lambda w, v: [w.addItem(self.string(i)) for i in v],
             "itemOnClicked": lambda w, v: signalCall(w.itemClicked,
                                                      lambda text, bid=self.string(v), _w=w: self.clicked(bid, _w,
-                                                                                                         text)),
+                                                                                                   [_w, text])),
             "itemDrag": lambda w, v: w.setDragDropMode(QListWidget.InternalMove if v else QListWidget.NoDragDrop),
             "textChanged": lambda w, v: signalCall(w.textChanged,
-                                                   lambda text, bid=self.string(v), _w=w: self.clicked(bid, _w, text)),
+                                                   lambda text, bid=self.string(v), _w=w: self.clicked(bid, _w,
+                                                                                                 [_w, text])),
             "placeholderText": lambda w, v: w.setPlaceholderText(self.string(v)),
             "returnPressed": lambda w, v: signalCall(w.returnPressed,
-                                                     lambda bid=self.string(v), _w=w: self.clicked(bid, _w, _w.text())),
+                                                     lambda bid=self.string(v), _w=w: self.clicked(bid, _w,
+                                                                                             [_w, _w.text()])),
             "passwordMode": lambda w, v: w.setEchoMode(QLineEdit.Password) if v else None,
         }
 
@@ -705,6 +717,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 _widget = widget_type(self)
                 widget_type = widget_type.__name__
                 widget = _widget.widget
+
+            setattr(widget, "YUML_WIDGET_NAME", _i)
 
             self.API_G.globals(_i, widget)
             for key, val in data[_i].items():
@@ -735,7 +749,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                         continue
 
                 _scope = [scope, widget_type] if isinstance(scope, str) else deepcopy(scope).append(widget_type)
-                self.widget(key, data[_i], widget, _scope, _i)
+                self.widget(key, data[_i], widget, _scope, widget.YUML_WIDGET_NAME)
 
     def main_block(self, block_name: str, scope: str | list, _accept=None):
         blocks = block_name.split("_")
@@ -798,8 +812,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 def load_package():
                     for modules, handler in [
                         (self.main_block_module, lambda _mod: _mod(data, self)),
-                        (self.widget_block_module, lambda _mod: self.cw.dynamic(data, scope, _mod)),
-                    ]:
+                        (self.widget_block_module, lambda _mod: self.cw.dynamic(data, scope, _mod))]:
                         for mod in modules:
                             if mod.__name__ == raw:
                                 handler(mod)
@@ -883,7 +896,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
     def resizeEvent(self, a0):
         super().resizeEvent(a0)
-
         if not self.execResizeEvent:
             self.execResizeEvent = True  # PyQt第一次创建窗口时，会调用resizeEvent，屏蔽第一次创建窗口事件
             return
