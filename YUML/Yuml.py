@@ -897,6 +897,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         if self.data.get("windowClosed") is not None:
             self.call_block("windowClosed", event)
         else:
+            super().closeEvent(event)
             event.Yes()
 
     def clicked(self, wid: str, widget, text=None):
