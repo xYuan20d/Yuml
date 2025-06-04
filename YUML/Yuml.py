@@ -353,7 +353,6 @@ class APIS:
         def setLightMode(self):
             """
             同上 (setDarkMode)
-            :return:
             """
             if self.window.data.get("lightMode") is not None:
                 self.window.call_block("lightMode")
