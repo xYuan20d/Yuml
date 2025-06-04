@@ -860,6 +860,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
     def showEvent(self, a0):
         super().showEvent(a0)
         if self._is_create:
+            if self.data.get("windowShowed"):
+                self.call_block("windowShowed")
             return
 
         self._is_create = True
@@ -886,10 +888,12 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             self.execResizeEvent = True  # PyQt第一次创建窗口时，会调用resizeEvent，屏蔽第一次创建窗口事件
             return
 
-        if self.data.get("windowResized") is None:
-            return
+        if self.data.get("windowResized") is not None:
+            self.call_block("windowResized")
 
-        self.call_block("windowResized")
+    def hideEvent(self, a0):
+        if self.data.get("windowHidden") is not None:
+            self.call_block("windowHidden")
 
     def closeEvent(self, event):
         setattr(event, "Yes", event.accept)
