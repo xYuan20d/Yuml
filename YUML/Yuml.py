@@ -248,7 +248,8 @@ class APIS:
 
         def setI18n(self, folder, file, default_file):
             """
-            设置i18n配置
+            配置i18n (internationalization)
+
             :param folder: 翻译文件夹
             :param file: 默认当前文件
             :param default_file: 默认文件
@@ -275,6 +276,7 @@ class APIS:
             """
             调试器
             当python解释器使用-O选项时, 该函数不会执行(除使用?操作符)
+            不建议在生产时开启
             """
             from psutil import Process
             rss_peak = 0
@@ -337,6 +339,10 @@ class APIS:
                     Thread(target=getPerf, daemon=True).start()
 
         def setDarkMode(self):
+            """
+            openListenSystemColorMode的切换颜色功能
+            你可以手动调用他进行切换
+            """
             if self.window.data.get("darkMode") is not None:
                 self.window.call_block("darkMode")
 
@@ -344,6 +350,10 @@ class APIS:
                 i.darkQssStyle(i) if hasattr(i, "darkQssStyle") and callable(getattr(i, 'darkQssStyle')) else None
 
         def setLightMode(self):
+            """
+            同上 (setDarkMode)
+            :return:
+            """
             if self.window.data.get("lightMode") is not None:
                 self.window.call_block("lightMode")
 
@@ -352,8 +362,12 @@ class APIS:
 
 
         def openListenSystemColorMode(self):
+            """
+            开启监控系统颜色模式功能
+            """
             if self._ListenSystemColorTimerModeTimer is not None:
                 return
+
             current = None
             def update():
                 nonlocal current
@@ -373,12 +387,18 @@ class APIS:
             self._ListenSystemColorTimerModeTimer.start(1)
 
         def closeListenSystemColorMode(self):
+            """
+            关闭监控系统颜色模式功能
+            """
             if self._ListenSystemColorTimerModeTimer is not None:
                 self._ListenSystemColorTimerModeTimer.stop()
                 self._ListenSystemColorTimerModeTimer = None
 
 
     class Console:
+        """
+        针对YuanGuiScript的输出功能
+        """
         @staticmethod
         def log(v):
             print(v)
@@ -420,11 +440,13 @@ class APIS:
         def notExec(self, block: str):
             """
             不执行特定块的代码
+            :param block: 块名
             """
             self.notExecBlock.append(block)
 
         def execBlockCode(self, block_code: str, scope: str | list):
             """
+            执行string块
             因技术问题，该方法暂时无法实现
             """
             ...
@@ -451,7 +473,7 @@ class APIS:
             用于验证目的
             正常创建全局命名可以使用
             :param name: 名称
-            :param default: 找不到时返回(默认为None)
+            :param default: 未找到时返回
             """
             return self.eval.get(name, default)
 
@@ -869,6 +891,14 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
         self.call_block("windowResized")
 
+    def closeEvent(self, event):
+        setattr(event, "Yes", event.accept)
+        setattr(event, "No", event.ignore)
+        if self.data.get("windowClosed") is not None:
+            self.call_block("windowClosed", event)
+        else:
+            event.Yes()
+
     def clicked(self, wid: str, widget, text=None):
         if self.python is not None:
             try:
@@ -914,6 +944,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         try:
             s = _str[:-5] + _str[-4:]
             if _str.endswith(":int"):
+                # 从特定角度来说, :int可以被:obj方法代替(int(code) :obj), 但出于可读性考虑, 保留该功能
                 return int(_str[:-4]) if _str[-5] != ":" else s
 
             elif _str.endswith(":obj"):
