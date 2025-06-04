@@ -193,7 +193,8 @@ class APIS:
 
         def setImportSelfPackageFolder(self, folder: str):
             """
-            设置YUML包导入文件夹(自定遍历目录里面的包)
+            Yuml核心功能之一
+            设置Yuml包导入文件夹 (自动遍历目录里面的包)
             :param folder: 目录
             """
 
@@ -219,8 +220,8 @@ class APIS:
 
         def importPackage(self, *args):
             """
-            简单导入（通过importlib.import_module）
-            写上导入的模块名字（字符串）即可
+            简单导入 (通过importlib.import_module)
+            写上导入的模块名字(字符串)即可
             """
             for i in args:
                 split = i.split(" ")
@@ -232,11 +233,11 @@ class APIS:
 
         def comImportPackage(self, python_code: str, module_name: str):
             """
-            处理复杂导入
+            复杂导入
             示例: comImportPackage("from math import sqrt, pi", "sqrt pi")
 
             :param python_code: 通过exec执行python导入代码
-            :param module_name: 在此处写上导入了的模块，空格隔开
+            :param module_name: 导入的模块，空格隔开
             """
             exec(python_code)
             for i in module_name.split(" "):
