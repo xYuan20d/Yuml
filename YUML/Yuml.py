@@ -178,6 +178,13 @@ class APIS:
                     break
 
         def setTag(self, tag_name: str, *args):
+            """
+            Yuml核心概念之一
+            分页开发, 就像html一样切换切换页(类似javascript的window.location.replace)
+
+            :param tag_name: 文件名
+            :param args: 排除项
+            """
             self.window.data = {}
 
             for i in self.window.findChildren(QWidget):
@@ -196,7 +203,8 @@ class APIS:
             """
             Yuml核心功能之一
             设置Yuml包导入文件夹 (自动遍历目录里面的包)
-            :param folder: 目录
+
+            :param folder: 包目录
             """
 
             for i in listdir(folder):
@@ -223,6 +231,7 @@ class APIS:
         def importPackage(self, *args):
             """
             简单导入 (通过importlib.import_module)
+
             写上导入的模块名字(字符串)即可
             """
             for i in args:
@@ -257,6 +266,14 @@ class APIS:
             self._i18n = (folder, file, default_file)
 
         def i18n(self, name):
+            """
+            i18n (需通过setI18n配置)
+            返回指定名称的翻译文本
+            建议赋值为tr (\>tr: "app.i18n")
+
+            :param name: 翻译名称
+            :return: 翻译文本
+            """
             if self._i18n_data is None:
                 with open(path.join(self._i18n[0], self._i18n[1]), "r", encoding="UTF-8") as f:
                     self._i18n_data = load(f)
@@ -971,7 +988,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         try:
             s = _str[:-5] + _str[-4:]
             if _str.endswith(":int"):
-                # 从特定角度来说, :int可以被:obj方法代替(int(code) :obj), 但出于可读性考虑, 保留该功能
+                # :int可以被:obj方法代替({< int(1+1) >} :obj), 出于可读性考虑({< 1+1 >} :int), 保留该功能
                 return int(_str[:-4]) if _str[-5] != ":" else s
 
             elif _str.endswith(":obj"):
