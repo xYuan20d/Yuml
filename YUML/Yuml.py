@@ -60,7 +60,8 @@ def signalCall(func: All, func2):
 
 class Warns:
     class YuanDeprecatedWarn(Warning):
-        def __init__(self, *args): super().__init__(*args)
+        def __init__(self, *args):
+            super().__init__(*args)
 
 
 class Warps:
