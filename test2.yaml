@@ -1,9 +1,0 @@
-widget:
-  button:
-    button1:
-      Y: 50
-      show: true
-
-    button2:
-      Y: 100
-      show: true
