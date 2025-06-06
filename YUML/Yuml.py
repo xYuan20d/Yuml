@@ -229,6 +229,26 @@ class APIS:
                         if issubclass(obj, base) and obj != base:
                             handler(obj)
 
+                def _dedup_class_names(mod_list, error_print):
+                    _names = []
+                    for idx, obj in enumerate(mod_list):
+                        name = obj.__name__
+                        if name == "_YuGM_":
+                            continue
+                        if name not in _names:
+                            _names.append(name)
+                        else:
+                            new_name = f"{name}_{i}"
+                            obj.__name__ = new_name
+                            _names.append(new_name)
+                            error_print(f"类名重复 `{name}`，强制改名为 `{new_name}`", "ModuleNameError")
+
+                _dedup_class_names(self.window.main_block_module, self.window.error_print)
+                _dedup_class_names(self.window.widget_block_module, self.window.error_print)
+                _dedup_class_names(self.window.widget_add_block_module, self.window.error_print)
+                _dedup_class_names(self.window.widgetBlock_block_module, self.window.error_print)
+
+
         def importPackage(self, *args):
             """
             简单导入 (通过importlib.import_module)
@@ -267,7 +287,7 @@ class APIS:
             self._i18n = (folder, file, default_file)
 
         def i18n(self, name):
-            """
+            r"""
             i18n (需通过setI18n配置)
             返回指定名称的翻译文本
             建议赋值为tr (\>tr: "app.i18n")
