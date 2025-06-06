@@ -190,7 +190,7 @@ class APIS:
 
             for i in self.window.findChildren(QWidget):
                 if i not in [self.window.titleBar]:
-                    # MaximizeButton CloseButton MinimizeButton
+                    # MaximizeButton CloseButton MinimizeButton 排除这三个控制窗口的按钮
                     if type(i) not in [MaximizeButton, CloseButton, MinimizeButton]:
                         i.deleteLater() if i not in args else None
 
@@ -301,6 +301,9 @@ class APIS:
             vms_peak = 0
             pid = getpid()
             def Perf():
+                """
+                性能监控
+                """
                 nonlocal rss_peak, vms_peak
                 p = Process(pid)
                 rams = p.memory_info()
@@ -318,6 +321,7 @@ class APIS:
                 while True:
                     Perf()
 
+            # 输入~q退出
             q = self.Console.Q(self.window)
             if not self._is_debug_start:
                 color_init()
@@ -619,12 +623,15 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             return False
 
     def call_block(self, scope, accept=None):
-        for i in self.data[scope]:
-            if scope in self.block.notExecBlock:
-                self.block.notExecBlock.remove(scope)
-                return
+        if scope in self.data:
+            for i in self.data[scope]:
+                if scope in self.block.notExecBlock:
+                    self.block.notExecBlock.remove(scope)
+                    return
 
-            self.main_block(i, scope, accept)
+                self.main_block(i, scope, accept)
+        else:
+            self.error_print(f"{scope}未找到", "NoRootBlockError")
 
     def widget(self, key: str, data, widget: QWidget, scope: list | str, name: str):
         match key:
@@ -675,7 +682,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                                 return None
                             _is = True
                             self.debug_print(f"加载Package Widget Block({key} {self.Symbols.RAW} ({_i})")
-
                     return _is
 
                 if load_package() is None:
@@ -737,7 +743,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 widget = _widget.widget
 
             setattr(widget, "YUML_WIDGET_NAME", _i)
-
             self.API_G.globals(_i, widget)
             for key, val in data[_i].items():
                 limit = widget_limit.get(key, [])
@@ -758,7 +763,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                                 is_rep = True
                         except AttributeError:
                             continue
-
                 if is_rep:
                     continue
 
@@ -778,9 +782,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
         try:
             int(blocks[1])
+
         except ValueError:
             self.debug_print(f"{block_name} `_` 后不是数字(自动跳过)")
             _block_name = block_name
+
         except IndexError:
             pass
 
@@ -843,7 +849,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                                 self.debug_print(f"加载Package {block_type}({raw} {self.Symbols.RAW} {mod})")
                                 return True
                     return None
-
 
                 if block_name[0] not in ["\\"]:
                     block_name = block_name.split("<")
@@ -964,7 +969,32 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
     def string(self, s):
         """
+        Yuml核心功能之一
         字符串渲染引擎
+
+        将{<>}内部的代码使用eval执行并返回结果
+        默认返回为字符串
+        若为:obj, 则返回eval结果
+        若为:int, 则返回eval结果转换为int
+
+        示例:
+        {< 1 + 1 >} -> '2'
+        {< 1 + 1 >} :int -> 2
+        {< 1 + 1 >} :obj -> 2
+
+        不会再增加更多的类型转换, 因为这会导致代码可读性降低, 完全可以通过:obj代替
+        如:
+        bool:
+        {< True >} :obj -> True
+
+        {< MyClass() >} -> 'MyClass'对象的字符串表示
+        {< MyClass() >} :obj -> MyClass对象本身
+        {< MyClass() >} :int -> ValueError
+
+        若为:
+        {{<< 1+1 >>}}将会被替换为{< 1+1 >}，并不会被执行, 就像python的f-string的{{}}一样会被替换为{}
+        若:int为::int, 则会替换为:int并且不会被执行
+        :obj同上
         """
         if not isinstance(s, str):
             return s
@@ -991,7 +1021,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             if _str.endswith(":int"):
                 # :int可以被:obj方法代替({< int(1+1) >} :obj), 出于可读性考虑({< 1+1 >} :int), 保留该功能
                 return int(_str[:-4]) if _str[-5] != ":" else s
-
             elif _str.endswith(":obj"):
                 return eval_result if _str[-5] != ":" else s
             else:
