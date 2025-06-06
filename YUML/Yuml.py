@@ -229,24 +229,24 @@ class APIS:
                         if issubclass(obj, base) and obj != base:
                             handler(obj)
 
-                def _dedup_class_names(mod_list, error_print):
+                def _dedup_class_names(mod_list):
                     _names = []
-                    for idx, obj in enumerate(mod_list):
-                        name = obj.__name__
-                        if name == "_YuGM_":
+                    for idx, _obj in enumerate(mod_list):
+                        _name = _obj.__name__
+                        if _name == "_YuGM_":
                             continue
-                        if name not in _names:
-                            _names.append(name)
+                        if _name not in _names:
+                            _names.append(_name)
                         else:
-                            new_name = f"{name}_{i}"
-                            obj.__name__ = new_name
+                            new_name = f"{_name}_{i}"
+                            _obj.__name__ = new_name
                             _names.append(new_name)
-                            error_print(f"类名重复 `{name}`，强制改名为 `{new_name}`", "ModuleNameError")
+                            self.window.error_print(f"类名重复 `{_name}`，强制改名为 `{new_name}`", "ModuleNameError")
 
-                _dedup_class_names(self.window.main_block_module, self.window.error_print)
-                _dedup_class_names(self.window.widget_block_module, self.window.error_print)
-                _dedup_class_names(self.window.widget_add_block_module, self.window.error_print)
-                _dedup_class_names(self.window.widgetBlock_block_module, self.window.error_print)
+                _dedup_class_names(self.window.main_block_module)
+                _dedup_class_names(self.window.widget_block_module)
+                _dedup_class_names(self.window.widget_add_block_module)
+                _dedup_class_names(self.window.widgetBlock_block_module)
 
 
         def importPackage(self, *args):
@@ -1007,7 +1007,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         bool:
         {< True >} :obj -> True
 
-        {< MyClass() >} -> 'MyClass'对象的字符串表示
+        {< MyClass() >} -> 'MyClass' 对象的字符串表示
         {< MyClass() >} :obj -> MyClass对象本身
         {< MyClass() >} :int -> ValueError
 
