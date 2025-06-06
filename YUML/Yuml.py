@@ -241,7 +241,7 @@ class APIS:
                             new_name = f"{_name}_{i}"
                             _obj.__name__ = new_name
                             _names.append(new_name)
-                            self.window.error_print(f"类名重复 `{_name}`，强制改名为 `{new_name}`", "ModuleNameError")
+                            self.window.error_print(f"类名重复 `{_name}`, 强制改名为 `{new_name}`", "ModuleNameError")
 
                 _dedup_class_names(self.window.main_block_module)
                 _dedup_class_names(self.window.widget_block_module)
@@ -267,7 +267,7 @@ class APIS:
             示例: comImportPackage("from math import sqrt, pi", "sqrt pi")
 
             :param python_code: 通过exec执行python导入代码
-            :param module_name: 导入的模块，空格隔开
+            :param module_name: 导入的模块, 空格隔开
             """
             exec(python_code)
             for i in module_name.split(" "):
@@ -488,7 +488,7 @@ class APIS:
         def execBlockCode(self, block_code: str, scope: str | list):
             """
             执行string块
-            因技术问题，该方法暂时无法实现
+            因技术问题, 该方法暂时无法实现
             """
             ...
 
@@ -942,7 +942,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
     def resizeEvent(self, a0):
         super().resizeEvent(a0)
         if not self.execResizeEvent:
-            self.execResizeEvent = True  # PyQt第一次创建窗口时，会调用resizeEvent，屏蔽第一次创建窗口事件
+            self.execResizeEvent = True  # PyQt第一次创建窗口时, 会调用resizeEvent, 屏蔽第一次创建窗口事件
             return
 
         if self.data.get("windowResized") is not None:
@@ -1012,7 +1012,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         {< MyClass() >} :int -> ValueError
 
         若为:
-        {{<< 1+1 >>}}将会被替换为{< 1+1 >}，并不会被执行, 就像python的f-string的{{}}一样会被替换为{}
+        {{<< 1+1 >>}}将会被替换为{< 1+1 >}, 并不会被执行, 就像python的f-string的{{}}一样会被替换为{}
         若:int为::int, 则会替换为:int并且不会被执行
         :obj同上
         """
