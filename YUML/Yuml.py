@@ -229,24 +229,28 @@ class APIS:
                         if issubclass(obj, base) and obj != base:
                             handler(obj)
 
-                def _dedup_class_names(mod_list):
-                    _names = []
-                    for idx, _obj in enumerate(mod_list):
-                        _name = _obj.__name__
-                        if _name == "_YuGM_":
-                            continue
-                        if _name not in _names:
-                            _names.append(_name)
-                        else:
-                            new_name = f"{_name}_{i}"
-                            _obj.__name__ = new_name
-                            _names.append(new_name)
-                            self.window.error_print(f"类名重复 `{_name}`, 强制改名为 `{new_name}`", "ModuleNameError")
+                def dedup_class_names(*module_lists):
+                    _names = set()
+                    for mod_list in module_lists:
+                        for idx, _obj in enumerate(mod_list):
+                            _name = _obj.__name__
+                            if _name == "_YuGM_":
+                                continue
+                            if _name not in _names:
+                                _names.add(_name)
+                            else:
+                                new_name = f"{_name}_{i}"
+                                _obj.__name__ = new_name
+                                _names.add(new_name)
+                                (self.window.error_print
+                                 (f"类名重复 `{_name}`, 强制改名为 `{new_name}`", "ModuleNameError"))
 
-                _dedup_class_names(self.window.main_block_module)
-                _dedup_class_names(self.window.widget_block_module)
-                _dedup_class_names(self.window.widget_add_block_module)
-                _dedup_class_names(self.window.widgetBlock_block_module)
+                dedup_class_names(
+                    self.window.main_block_module,
+                    self.window.widget_block_module,
+                    self.window.widget_add_block_module,
+                    self.window.widgetBlock_block_module
+                )
 
 
         def importPackage(self, *args):
@@ -308,6 +312,28 @@ class APIS:
                 if self._i18n_def_data.get(name) is None:
                     raise NameError(f"{name} 未找到")
                 return self._i18n_def_data[name]
+
+        def reModuleName(self, name: str, new_name: str):
+            """
+            重命名模块类名
+            无法重命名_YuGM_, 因为他返回的是dict而不是类
+
+            :param name: 原模块类名
+            :param new_name: 新的模块类名
+            """
+            for module_list in [
+                self.window.main_block_module,
+                self.window.widget_block_module,
+                self.window.widget_add_block_module,
+                self.window.widgetBlock_block_module]:
+
+                for mod in module_list:
+                    if getattr(mod, '__name__', None) == name:
+                        mod.__name__ = new_name
+                        self.window.debug_print(f"重命名模块 {name} {self.window.Symbols.ASSIGNMENT} {new_name}")
+                        return
+
+            raise NameError(f"未找到模块 {name}")
 
         @Warps.debug("CL")
         def setConsoleLog(self, mode: str):
@@ -406,26 +432,24 @@ class APIS:
             """
             开启监控系统颜色模式功能
             """
-            if self._ListenSystemColorTimerModeTimer is not None:
-                return
+            if self._ListenSystemColorTimerModeTimer is None:
+                current = None
+                def update():
+                    nonlocal current
 
-            current = None
-            def update():
-                nonlocal current
+                    if self.window.is_dark_mode():  # 深色
+                        if current is not True:
+                            current = True
+                            self.setDarkMode()
 
-                if self.window.is_dark_mode():  # 深色
-                    if current is not True:
-                        current = True
-                        self.setDarkMode()
+                    else:
+                        if current is not False:
+                            current = False
+                            self.setLightMode()
 
-                else:
-                    if current is not False:
-                        current = False
-                        self.setLightMode()
-
-            self._ListenSystemColorTimerModeTimer = QTimer(self.window)
-            signalCall(self._ListenSystemColorTimerModeTimer.timeout, update)
-            self._ListenSystemColorTimerModeTimer.start(1)
+                self._ListenSystemColorTimerModeTimer = QTimer(self.window)
+                signalCall(self._ListenSystemColorTimerModeTimer.timeout, update)
+                self._ListenSystemColorTimerModeTimer.start(1)
 
         def closeListenSystemColorMode(self):
             """
@@ -847,9 +871,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             case "QssStyle":
                 self.setStyleSheet(self.string(data))
             case "callBlock":
-                data = [[self.string(x) for x in sublist] for sublist in data]
-
-                for i in data:
+                for i in [[self.string(x) for x in sublist] for sublist in data]:
                     self.call_block(*i)
             case "PythonScript":
                 exec(data, self.eval_globals)
