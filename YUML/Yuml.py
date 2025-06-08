@@ -509,12 +509,15 @@ class APIS:
             """
             self.notExecBlock.append(block)
 
-        def execBlockCode(self, block_code: str, scope: str | list):
+        def execBlockCode(self, block_code: str):
             """
             执行string块
-            因技术问题, 该方法暂时无法实现
+
+            :param block_code: 块代码
             """
-            ...
+            data: dict = safe_load(Template(block_code).render())
+            for i, v in data.items():
+                self._exec.main_block({i: v})
 
 
     class G:
@@ -606,7 +609,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                         self.block, "window": super()}
         self.eval_globals = {
             "math": __import__("math"),
-            "window": super(),
+            "window": self,
             "app": self.API_APP
         }
         self.global_args = [self.lua, self._G, self.eval_globals]
@@ -677,7 +680,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         else:
             self.error_print(f"{scope}未找到", "NoRootBlockError")
 
-    def widget(self, key: str, data, widget: QWidget, scope: list | str, name: str):
+    def widget(self, key: str, data, widget: QWidget, scope: list | str | None, name: str):
         match key:
             case "show":  widget.setVisible(self.string(data[key]))
 
@@ -729,8 +732,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                     return _is
 
                 if load_package() is None:
-                    _scope = deepcopy(scope)
-                    _scope.append(name)
+                    if scope is not None:
+                        _scope = deepcopy(scope)
+                        _scope.append(name)
+                    else:
+                        _scope = None
                     self.main_block(key, _scope, _is_yuml_widget=True
                     if (isinstance(widget, LoadYmlFile) and key=="type") else False)
 
@@ -814,11 +820,15 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                     if _widget.widgetAttribute(key, self.string(val)) is not False:
                         continue
 
-                _scope = [scope, widget_type] if isinstance(scope, str) else deepcopy(scope).append(widget_type)
+                if scope is not None:
+                    _scope = [scope, widget_type] if isinstance(scope, str) else deepcopy(scope).append(widget_type)
+                else:
+                    _scope = None
                 self.widget(key, data[_i], widget, _scope, widget.YUML_WIDGET_NAME)
 
-    def main_block(self, block_name: str, scope: str | list, _accept=None, _is_yuml_widget = False):
-        blocks = block_name.split("_")
+    def main_block(self, block_name: str | dict, scope: str | list | None = None,
+                   _accept=None, _is_yuml_widget = False):
+        blocks = block_name.split("_") if scope is not None else next(iter(block_name)).split("_")
         _block_name = blocks[0]
         if len(blocks) > 2:
             self.debug_print(f"{block_name} `_` 数量超过1(自动跳过)")
@@ -834,14 +844,18 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         except IndexError:
             pass
 
-        if isinstance(scope, list):
-            data = self.data
-            for i in scope:
-                data = data[i]
+        if scope is not None:
+            if isinstance(scope, list):
+                data = self.data
+                for i in scope:
+                    data = data[i]
 
-            data = data[block_name]
+                data = data[block_name]
+            else:
+                data = self.data[scope][block_name]
         else:
-            data = self.data[scope][block_name]
+            data = next(iter(block_name.values()))
+            block_name = next(iter(block_name))
 
         self.debug_print(f"{block_name} 去除`_`: {_block_name} ({scope})")
 
