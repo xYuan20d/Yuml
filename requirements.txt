@@ -1,7 +1,7 @@
 PySide6
 PySideSix-Frameless-Window
 json5
-PyYAML
+ruamel.yaml
 lupa
 jinja2
 ipython
