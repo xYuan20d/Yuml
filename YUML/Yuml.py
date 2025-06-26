@@ -20,10 +20,10 @@ from threading import Thread
 from datetime import datetime
 from typing import Any as All
 from importlib import import_module
-from PySide6.QtGui import QFont, QIcon
 from os.path import dirname, abspath
 from YUML.YmlAPIS.python import YAPP
 from contextlib import contextmanager
+from PySide6.QtGui import QFont, QIcon
 from inspect import isclass, getmembers
 from YUML.script.YuanGuiScript import Script  # 自定义语言
 from PySide6.QtCore import QTimer, QObject, QEvent
@@ -84,7 +84,6 @@ class Warps:
                 return None
             return warp
         return decorator
-
 
 class MoveEventFilter(QObject):
     def __init__(self, _widget, window: "LoadYmlFile", data):
@@ -183,7 +182,7 @@ class APIS:
             for name, obj in getmembers(module, isclass):
                 if issubclass(obj, YAPP):
                     obj: All
-                    self.window.python = obj(super(LoadYmlFile, self.window), (self.window, APIS, self.window.API_APP))
+                    self.window.python = obj(self.window)
                     break
 
         def setTag(self, tag_name: str, *args):
@@ -279,11 +278,11 @@ class APIS:
                     try:
                         module = self._safe_load_module(unique_module_name, module_path)
                     except Exception as e:
-                        self.window.error_print(f"加载插件 {i} 失败: {e}", "ModuleLoadError")
+                        self.window.error_print(f"加载插件 `{i}` 失败: {e}", "ModuleLoadError")
                         continue
 
                 if not hasattr(module, "Y_NAMESPACE"):
-                    self.window.error_print(f"插件 {i} 缺少 Y_NAMESPACE", "ModuleNamespaceError")
+                    self.window.error_print(f"插件 `{i}` 缺少 Y_NAMESPACE", "ModuleNamespaceError")
                     continue
 
                 base_classes = {
@@ -366,7 +365,7 @@ class APIS:
             r"""
             i18n (需通过setI18n配置)
             返回指定名称的翻译文本
-            建议赋值为tr (\>tr: "app.i18n")
+            建议赋值为tr (\>tr: app.i18n)
 
             :param name: 翻译名称
             :return: 翻译文本
@@ -605,6 +604,12 @@ class APIS:
             self.lua = _lua
             self.G = _script_g
             self.eval = _eval
+            self._globals = []
+
+        def _update(self, name, value):
+            self.eval[name] = value
+            setattr(self.lua.globals(), name, value)
+            self.G[name] = value
 
         def globals(self, name: All | None, value: All) -> All:
             """
@@ -612,11 +617,22 @@ class APIS:
             :param name: 名称
             :param value: 值
             """
-            if name:
-                self.eval[name] = value
-                setattr(self.lua.globals(), name, value)
-                self.G[name] = value
+            if name is not None:
+                self._update(name, value)
 
+            return value
+
+        def updateGlobals(self, name: All, value: All) -> All:
+            self._update(name, value)
+            for i in self._globals:
+                for di, dv in i.items():
+                    if di == name:
+                        dv(value)
+
+            return value
+
+        def addUpdateList(self, name: All, value) -> All:
+            self._globals.append({name: value})
             return value
 
         def getGlobals(self, name: All, default=None) -> All:
@@ -770,15 +786,31 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
         return None
 
-    def widget(self, key: str, data, widget: QWidget, scope: list | str | None, name: str):
+    def widget(self, key: str | dict, data, widget: QWidget, scope: list | str | None, name: str):
+        _raw_key = key
+        if isinstance(key, dict):
+            for i in key:
+                data = key[i]
+                key = i
+                data = {key: data}
         match key:
             case "show":  widget.setVisible(self.string(data[key]))
 
             case "delGlobals":  self.API_G.delGlobals(self.string(data[key]))
 
-            case "move":  widget.move(self.string(data[key]["x"]), self.string(data[key]["y"]))
+            case "move":
+                if isinstance(data[key], list):
+                    data = self.process_nested_list(data[key])
+                    widget.move(data[0], data[1])
+                else:
+                    widget.move(self.string(data[key]["x"]), self.string(data[key]["y"]))
 
-            case "size":  widget.resize(self.string(data[key]["width"]), self.string(data[key]["height"]))
+            case "size":
+                if isinstance(data[key], list):
+                    data = self.process_nested_list(data[key])
+                    widget.resize(data[0], data[1])
+                else:
+                    widget.resize(self.string(data[key]["width"]), self.string(data[key]["height"]))
 
             case "X":  widget.move(self.string(data[key]), widget.y())
 
@@ -839,7 +871,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                         _scope.append(name)
                     else:
                         _scope = None
-                    self.main_block(key, _scope, _is_yuml_widget=True
+                    self.main_block(_raw_key, _scope, _is_yuml_widget=True
                     if (isinstance(widget, LoadYmlFile) and key=="type") else False)
 
     def create_widget(self, widget_type, data, scope, hook):
@@ -932,6 +964,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                     _scope = [scope, widget_type] if isinstance(scope, str) else deepcopy(scope).append(widget_type)
                 else:
                     _scope = None
+                    key = {key: val}
                 self.widget(key, data[_i], widget, _scope, widget.YUML_WIDGET_NAME)
 
             _hook_list.append(widget)
@@ -959,35 +992,44 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         return None
 
     def main_block(self, block_name: str | dict, scope: str | list | None = None,
-                   _accept=None, _is_yuml_widget = False, hook = None, _wh = None):
+                   _accept=None, _is_yuml_widget = False, hook = None, _wh = None) -> tuple:
         return_value = None
         info = None
         if hook:
             if not isinstance(hook, list):
                 # 处理hook但main_block没有返回值的情况
                 self.set_hook(hook, None)
-        blocks = block_name.split("_") if scope is not None else next(iter(block_name)).split("_")
+
+        if not isinstance(block_name, dict):
+            blocks = block_name.split("_")
+        else:
+            blocks = next(iter(block_name)).split("_")
         _block_name = blocks[0]
+        def rep():
+            nonlocal _block_name
+            if not isinstance(block_name, dict):
+                _block_name = block_name
+            else:
+                _block_name = next(iter(block_name))
         if len(blocks) > 2:
             self.debug_print(f"{block_name} `_` 数量超过1(自动跳过)")
-            _block_name = block_name
+            rep()
 
         try:
             int(blocks[1])
 
         except ValueError:
             self.debug_print(f"{block_name} `_` 后不是数字(自动跳过)")
-            _block_name = block_name
+            rep()
 
         except IndexError:
             pass
 
-        if scope is not None:
+        if not isinstance(block_name, dict):
             if isinstance(scope, list):
                 data = self.data
                 for i in scope:
                     data = data[i]
-
                 data = data[block_name]
             else:
                 data = self.data[scope][block_name]
@@ -999,7 +1041,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
         match _block_name:
             case "windowSize":
-                self.resize(self.string(data["width"]), self.string(data["height"]))
+                if isinstance(data, list):
+                    data = self.process_nested_list(data)
+                    self.resize(data[0], data[1])
+                else:
+                    self.resize(self.string(data["width"]), self.string(data["height"]))
             case "windowTitle":
                 self.setWindowTitle(self.string(data))
             case "windowIcon":
@@ -1097,8 +1143,16 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                         is_continue = False
                         continue
             case "DELETE":
-                for i in data:
-                    self.API_G.delGlobals(self.string(i))
+                for i in self.process_nested_list(data):
+                    self.API_G.delGlobals(i)
+            case "TEMP_VARS":
+                _vars: list = self.process_nested_list(data["VARS"])
+                self.exec_code(data["CODE"])
+                _hook = []
+                for i in _vars:
+                    _hook.append({i: self.API_G.getGlobals(i)})
+                    self.API_G.delGlobals(i)
+                self.set_hook(hook, _hook)
             case "IF":
                 for i in data:
                     if i != "ELSE":
@@ -1178,10 +1232,15 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                                 if data == ".accept":
                                     self.API_G.globals(block, _accept)
                                 else:
-                                    if isinstance(data, str):
-                                        self.API_G.globals(block, self.eval_code(data))
+                                    if block[0] == ">":
+                                        gl = self.API_G.updateGlobals
+                                        block = block[1:]
                                     else:
-                                        self.API_G.globals(block, data)
+                                        gl = self.API_G.globals
+                                    if isinstance(data, str):
+                                        gl(block, self.eval_code(data))
+                                    else:
+                                        gl(block, data)
                             case "#":
                                 # HOOK的另一种写法
                                 self.exec_code(data, hook=block)
@@ -1228,7 +1287,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         qss = '\n'.join(qss_list)
         self.app.setStyleSheet(self.app.styleSheet() + '\n' + qss)
 
-    def process_nested_list(self, data):
+    def process_nested_list(self, data) -> All:
         if isinstance(data, list):
             return [self.process_nested_list(item) for item in data]
         elif isinstance(data, dict):
@@ -1269,11 +1328,9 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
     def moveEvent(self, a0):
         super().moveEvent(a0)
-        try:
+        if getattr(self, "data", None):
             if self.data.get("windowMoved"):
                 self.call_block("windowMoved")
-        except AttributeError:
-            pass
 
     def closeEvent(self, event):
         setattr(event, "Yes", event.accept)
