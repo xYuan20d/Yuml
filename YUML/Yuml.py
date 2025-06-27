@@ -607,6 +607,12 @@ class APIS:
             self._globals = []
 
         def _update(self, name, value):
+            if isinstance(name, list):
+                parent = self.getGlobals(name[0])
+                for key in name[1:-1]:
+                    parent = getattr(parent, key)
+                setattr(parent, name[-1], value)
+                return
             self.eval[name] = value
             setattr(self.lua.globals(), name, value)
             self.G[name] = value
@@ -633,6 +639,8 @@ class APIS:
 
         def addUpdateList(self, name: All, value) -> All:
             self._globals.append({name: value})
+            value(self.getGlobals(name))
+
             return value
 
         def getGlobals(self, name: All, default=None) -> All:
@@ -733,6 +741,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         if "template" in self.data:
             warn("template在新版本中被移除, 使用yaml锚点实现相同功能", category=Warns.YuanDeprecatedWarn)
 
+        self.definedDataBox()
         self.definedQss()
         if not is_module:
             for i in self.data["run"]:
@@ -1145,7 +1154,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             case "DELETE":
                 for i in self.process_nested_list(data):
                     self.API_G.delGlobals(i)
-            case "TEMP_VARS":
+            case "LOCAL":
                 _vars: list = self.process_nested_list(data["VARS"])
                 self.exec_code(data["CODE"])
                 _hook = []
@@ -1235,8 +1244,12 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                                     if block[0] == ">":
                                         gl = self.API_G.updateGlobals
                                         block = block[1:]
+                                        _path = block.split("::")
+                                        if len(_path) > 1:
+                                            block = _path
                                     else:
                                         gl = self.API_G.globals
+
                                     if isinstance(data, str):
                                         gl(block, self.eval_code(data))
                                     else:
@@ -1286,6 +1299,19 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
         qss = '\n'.join(qss_list)
         self.app.setStyleSheet(self.app.styleSheet() + '\n' + qss)
+
+    def definedDataBox(self):
+        class DataBox:
+            pass
+
+        data: dict = self.data.get("dataBox")
+        if data:
+            for i, v in data.items():
+                data_box = DataBox()
+                self.API_G.globals(i, data_box)
+                if v:
+                    for di, dv in v.items():
+                        setattr(data_box, di, dv)
 
     def process_nested_list(self, data) -> All:
         if isinstance(data, list):
