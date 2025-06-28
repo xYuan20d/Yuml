@@ -1,0 +1,12 @@
+test.py
+__pycache__/
+.idea/
+.DS_Store
+test.yaml
+main.py
+demo.py
+lang/
+packages/
+pythonvenv/
+widget1.yaml
+test2.yaml

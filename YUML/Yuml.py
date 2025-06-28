@@ -661,6 +661,9 @@ class APIS:
             setattr(self.lua.globals(), name, None)
             del self.G[name]
 
+        def moveToDataBox(self, name, box):
+            ...
+
 
 class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将它改为继承windowStyle
 
@@ -714,12 +717,14 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self.info_print = self.NN
         self.block = APIS.Block(self)
         self.API_APP = APIS.APP(self.app, self)
-        self._G: dict = {"app": self.API_APP, "Console": APIS.Console(), "Lua": APIS.Lua(self.lua), "block":
+        self.lua_api = APIS.Lua(self.lua)
+        self._G: dict = {"app": self.API_APP, "Console": APIS.Console(), "Lua": self.lua_api, "block":
                         self.block, "window": super()}
         self.eval_globals = {
             "math": __import__("math"),
             "window": self,
-            "app": self.API_APP
+            "app": self.API_APP,
+            "Lua": self.lua_api
         }
         self.global_args = [self.lua, self._G, self.eval_globals]
         self.API_G = APIS.G(*self.global_args)
