@@ -8,5 +8,4 @@ demo.py
 lang/
 packages/
 pythonvenv/
-widget1.yaml
-test2.yaml
+*.yaml
