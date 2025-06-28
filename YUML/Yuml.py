@@ -700,7 +700,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self.time = perf_counter()
         super().__init__(_p)
         self.version = (0, 0, 0, 1, "beta")
-        self.yaml = YAML()
+        self.yaml = YAML(typ="rt")
+        self.yaml.preserve_quotes = True
         self.python = None
         self.NN = lambda x: None
         self.main_block_module = []
@@ -1103,7 +1104,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             case "RETURN":
                 return_value = self.string(data)
             case "LOG":
-                print(self.string(data))
+                if isinstance(data, str):
+                    print(self.string(data))
+                else:
+                    _args = self.process_nested_list(data)
+                    print(_args[0], **_args[1])
             case "CONTINUE":
                 if _wh:
                     info = f"{_wh}-CONTINUE"
@@ -1456,14 +1461,18 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 self.error_print(error, "StringError")
                 return ""
 
-        _str = sub(r'\{<<\s*(.*?)\s*>>}', r'{<\1>}', sub(r'\{<\s*([^>]+?)\s*>}', rep, s)).strip()
+        # 替换 {<< >>} 为 {< >}，但只去除 << >> 内部的首尾空格，不影响整串
+        s = sub(r'\{<<\s*(.*?)\s*>>}', lambda m: '{<' + m.group(1).strip() + '>', s)
+
+        # 替换 {< >} 的表达式
+        _str = sub(r'\{<\s*([^>]+?)\s*>}', rep, s)
+
         if not is_rep:
             return _str
 
         try:
             s = _str[:-5] + _str[-4:]
             if _str.endswith(":int"):
-                # :int可以被:obj方法代替({< int(1+1) >} :obj), 出于可读性考虑({< 1+1 >} :int), 保留该功能
                 return int(_str[:-4]) if _str[-5] != ":" else s
             elif _str.endswith(":obj"):
                 return eval_result if _str[-5] != ":" else s
