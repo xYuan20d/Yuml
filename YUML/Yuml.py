@@ -1461,11 +1461,18 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 self.error_print(error, "StringError")
                 return ""
 
-        # 替换 {<< >>} 为 {< >}，但只去除 << >> 内部的首尾空格，不影响整串
-        s = sub(r'\{<<\s*(.*?)\s*>>}', lambda m: '{<' + m.group(1).strip() + '>', s)
+        is__rep = False
+        def _rep(m):
+            nonlocal is__rep
+            is__rep = True
+            return '{<' + m.group(1).strip() + '>}'
 
-        # 替换 {< >} 的表达式
-        _str = sub(r'\{<\s*([^>]+?)\s*>}', rep, s)
+        # 替换 {<< >>} 为 {< >}，但只去除 << >> 内部的首尾空格，不影响整串
+        _str = sub(r'\{<<\s*(.*?)\s*>>}', _rep, s)
+
+        if not is__rep:
+            # 替换 {< >} 的表达式
+            _str = sub(r'\{<\s*([^>]+?)\s*>}', rep, _str)
 
         if not is_rep:
             return _str
