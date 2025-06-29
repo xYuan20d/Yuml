@@ -1421,7 +1421,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         {< MyClass() >} :int -> ValueError
 
         若为:
-        {<< 1+1 >>}将会被替换为{< 1+1 >}, 并不会被执行, 类似python的f-string的{{}}一样会被替换为{}, 例如:
+        {<< 1+1 >>}将会被替换为{<1+1>}, 并不会被执行, 类似python的f-string的{{}}一样会被替换为{}, 例如:
             {< 1+1 >} ::int -> '2 :int'
             {< 1+1 >} :int -> 2
             {<< 1+1 >>} :int -> '{<1+1>} :int'
