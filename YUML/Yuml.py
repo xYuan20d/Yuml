@@ -12,9 +12,9 @@ from json5 import load
 from warnings import warn
 from copy import deepcopy
 from IPython import embed
-from ruamel.yaml import YAML
 from lupa import LuaRuntime
 from jinja2 import Template
+from ruamel.yaml import YAML
 from functools import reduce
 from threading import Thread
 from datetime import datetime
@@ -28,6 +28,7 @@ from inspect import isclass, getmembers
 from YUML.script.YuanGuiScript import Script  # 自定义语言
 from PySide6.QtCore import QTimer, QObject, QEvent
 from os import chdir, environ, path, listdir, getpid
+from YUML.data.YSQLite import is_sqlite_file, SQLiteDict
 from qframelesswindow import AcrylicWindow, FramelessWindow
 from sys import stderr, path as sys_path, modules as sys_modules
 from importlib.util import spec_from_file_location, module_from_spec
@@ -201,9 +202,7 @@ class APIS:
                     if type(i) not in [MaximizeButton, CloseButton, MinimizeButton]:
                         i.deleteLater() if i not in args else None
 
-            with open(tag_name, "r", encoding="UTF-8") as file:
-                chdir(dirname(abspath(tag_name)))
-                self.window.data = self.window.yaml.load(file)
+            self.window.yaml.load_file(tag_name)
 
             self.window.call_block("tagCalled")
 
@@ -580,9 +579,9 @@ class APIS:
 
 
     class Block:
-        def __init__(self, _exec: "LoadYmlFile"):
+        def __init__(self, window: "LoadYmlFile"):
             self.notExecBlock = []
-            self._exec = _exec
+            self.window = window
 
         def notExec(self, block: str):
             """
@@ -596,7 +595,7 @@ class APIS:
             执行string块
             :param block_code: 块代码
             """
-            self._exec.exec_code(self._exec.yaml.load(Template(block_code).render()))
+            self.window.exec_code(self.window.yaml.load_str(block_code, True))
 
 
     class G:
@@ -694,14 +693,41 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         RAW = "->>"
         SEPARATION = "--------------------"
 
+    class LoadYAML(YAML):
+        def __init__(self, window: "LoadYmlFile" = None):
+            super().__init__(typ="rt")
+            self.preserve_quotes = True
+            self.window = window
+
+        def load_str(self, _str: str, _rep=False) -> dict:
+            yaml_str = Template(_str).render()
+            data = self.load(yaml_str)
+            if not _rep:
+                self.window.data = data
+
+            return data
+
+        def load_file(self, file_name, _rep=False):
+            if is_sqlite_file(file_name):
+                data = SQLiteDict(file_name, "YUML")
+                if not _rep:
+                    self.window.data = data
+            else:
+                with open(file_name, "r", encoding="UTF-8") as file:
+                    data = self.load(Template(file.read()).render())
+                    if not _rep:
+                        chdir(dirname(abspath(file_name)))
+                        self.window.data = data
+
+            return data
+
 
     def __init__(self, file_name: str, app: QApplication, load_str: bool = False,
                  is_module: bool = False, _p: QWidget | None = None):
         self.time = perf_counter()
         super().__init__(_p)
         self.version = (0, 0, 0, 1, "beta")
-        self.yaml = YAML(typ="rt")
-        self.yaml.preserve_quotes = True
+        self.yaml = self.LoadYAML(self)
         self.python = None
         self.NN = lambda x: None
         self.main_block_module = []
@@ -732,16 +758,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self._G["_G"] = self.API_G
         self.cw = self.RWidgets(self.create_widget)
         self.API_G.globals("YGlobals", self.API_G)
+        self.data: dict | SQLiteDict = {}
         if load_str:
-            yaml_str = Template(file_name).render()
-            self.lines = yaml_str.splitlines()
-            self.data: dict = self.yaml.load(yaml_str)
+            self.yaml.load_str(file_name)
         else:
-            with open(file_name, "r", encoding="UTF-8") as file:
-                chdir(dirname(abspath(file_name)))
-                self.yaml_str = Template(file.read()).render()
-                self.lines = self.yaml_str.splitlines()
-                self.data: dict = self.yaml.load(self.yaml_str)
+            self.yaml.load_file(file_name)
 
         if "template" in self.data:
             warn("template在新版本中被移除, 使用yaml锚点实现相同功能", category=Warns.YuanDeprecatedWarn)
@@ -1103,11 +1124,11 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             case "RETURN":
                 return_value = self.string(data)
             case "LOG":
-                if isinstance(data, str):
-                    print(self.string(data))
-                else:
+                if isinstance(data, list):
                     _args = self.process_nested_list(data)
                     print(_args[0], **_args[1])
+                else:
+                    print(self.string(data))
             case "CONTINUE":
                 if _wh:
                     info = f"{_wh}-CONTINUE"
