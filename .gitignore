@@ -2,7 +2,6 @@ test.py
 __pycache__/
 .idea/
 .DS_Store
-test.yaml
 main.py
 demo.py
 lang/
