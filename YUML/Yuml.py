@@ -733,7 +733,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self.cw = self.RWidgets(self.create_widget)
         self.API_G.globals("YGlobals", self.API_G)
         if load_str:
-            chdir(dirname(abspath(__file__)))
             yaml_str = Template(file_name).render()
             self.lines = yaml_str.splitlines()
             self.data: dict = self.yaml.load(yaml_str)
