@@ -1,5 +1,4 @@
 # coding: utf-8
-from collections import OrderedDict, defaultdict
 from time import perf_counter
 start_time = perf_counter()
 from platform import system
@@ -27,6 +26,7 @@ from contextlib import contextmanager
 from PySide6.QtGui import QFont, QIcon
 from inspect import isclass, getmembers
 from YUML.script.YuanGuiScript import Script  # 自定义语言
+from collections import OrderedDict, defaultdict
 from PySide6.QtCore import QTimer, QObject, QEvent
 from os import chdir, environ, path, listdir, getpid
 from YUML.data.YSQLite import is_sqlite_file, SQLiteDict
@@ -55,6 +55,8 @@ YW_root = QMW
 
 windowStyle = environ.get("__YuQt_WindowStyle", "YW_ordinary")
 windowStyle = globals()[windowStyle]
+
+APPLICATION = QApplication
 
 def signalCall(func: All, func2):
     """
@@ -155,8 +157,8 @@ class APIS:
                     self.window.app.quit()
 
 
-        def __init__(self, app: QApplication, _window: "LoadYmlFile"):
-            self.app: QApplication = app
+        def __init__(self, app: APPLICATION, _window: "LoadYmlFile"):
+            self.app: APPLICATION = app
             self.window = _window
             self.notExecErrors = []
             self._i18n = ("lang", "zh_cn.json5", "default.json5")
@@ -723,7 +725,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             return data
 
 
-    def __init__(self, file_name: str, app: QApplication, load_str: bool = False,
+    def __init__(self, file_name: str, app: APPLICATION, load_str: bool = False,
                  is_module: bool = False, _p: QWidget | None = None):
         self.time = perf_counter()
         super().__init__(_p)
