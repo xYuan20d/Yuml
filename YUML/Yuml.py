@@ -1,4 +1,5 @@
 # coding: utf-8
+from collections import OrderedDict, defaultdict
 from time import perf_counter
 start_time = perf_counter()
 from platform import system
@@ -7,7 +8,7 @@ if system == "Windows":
     from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx
 elif system == "Darwin":
     from subprocess import run as runcommand
-from re import sub
+from re import sub, finditer
 from json5 import load
 from warnings import warn
 from copy import deepcopy
@@ -752,6 +753,10 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             "app": self.API_APP,
             "Lua": self.lua_api
         }
+        self.string_cache = OrderedDict()
+        self.STRING_CACHE_LIMIT = 500
+        self.string_counter = defaultdict(int)
+        self.current_globals = {}
         self.global_args = [self.lua, self._G, self.eval_globals]
         self.API_G = APIS.G(*self.global_args)
         self._G["_G"] = self.API_G
@@ -775,8 +780,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             for i in self.data["widget"]:
                 self.main_block(i, "widget")
 
-    def eval_code(self, code):
-        return eval(code, self.eval_globals)
+    def eval_code(self, code, _locals=None):
+        return eval(code, self.eval_globals, _locals if _locals else {})
 
     def error_print(self, msg: All, _id):
         if _id not in self.API_APP.notExecErrors:
@@ -1213,7 +1218,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 if isinstance(data, str):
                     self.set_hook(hook, self.call_block(self.string(data)))
                 else:
-                    data = [self.string(x) for x in data]
+                    data = self.process_nested_list(data)
                     self.set_hook(hook, self.call_block(*data))
             case "PythonScript":
                 if isinstance(data, list):
@@ -1464,8 +1469,25 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             hello {< name >} {< '!' >} :obj -> '!'
             {< name >}, hello{< '!' >} :obj -> '!'
         """
+
         if not isinstance(s, str):
             return s
+
+        if s in self.string_cache:
+            self.string_cache.move_to_end(s)
+            return self.string_cache[s](self.current_globals)
+
+        self.string_counter[s] += 1
+        if self.string_counter[s] > 3:
+            try:
+                func = self._compile_string_to_lambda(s)
+                self.string_cache[s] = func
+                self.string_cache.move_to_end(s)
+                if len(self.string_cache) > self.STRING_CACHE_LIMIT:
+                    self.string_cache.popitem(last=False)
+                return func(self.current_globals)
+            except Exception as e:
+                self.error_print(e, "JITCompileError")
 
         is_rep = False
         eval_result = None
@@ -1481,16 +1503,15 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 return ""
 
         is__rep = False
+
         def _rep(m):
             nonlocal is__rep
             is__rep = True
             return '{<' + m.group(1).strip() + '>}'
 
-        # 替换 {<< >>} 为 {< >}，但只去除 << >> 内部的首尾空格，不影响整串
         _str = sub(r'\{<<\s*(.*?)\s*>>}', _rep, s)
 
         if not is__rep:
-            # 替换 {< >} 的表达式
             _str = sub(r'\{<\s*([^>]+?)\s*>}', rep, _str)
 
         if not is_rep:
@@ -1499,13 +1520,57 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         try:
             s = _str[:-5] + _str[-4:]
             if _str.endswith(":int"):
-                return int(_str[:-4]) if _str[-5] != ":" else s
+                return_value = int(_str[:-4]) if _str[-5] != ":" else s
             elif _str.endswith(":obj"):
-                return eval_result if _str[-5] != ":" else s
+                return_value = eval_result if _str[-5] != ":" else s
             else:
-                return _str
+                return_value = _str
         except IndexError:
-            return _str
+            return_value = _str
+
+        return return_value
+
+    def _compile_string_to_lambda(self, s: str):
+        if s.endswith("::int") or s.endswith("::obj"):
+            return lambda ctx: s[:-5] + s[-4:]
+
+        render_type = None
+        if s.endswith(":int"):
+            render_type = "int"
+            s = s[:-4]
+        elif s.endswith(":obj"):
+            render_type = "obj"
+            s = s[:-4]
+
+        exprs = []
+        last_expr = None
+        last_pos = 0
+        pattern = r'\{<\s*(.*?)\s*>}'
+        for match in finditer(pattern, s):
+            start, end = match.span()
+            text = s[last_pos:start]
+            if text:
+                exprs.append(repr(text))
+            code = match.group(1).strip()
+            exprs.append(f'str(eval_code("{code}", ctx))')
+            last_expr = code
+            last_pos = end
+
+        if last_pos < len(s):
+            exprs.append(repr(s[last_pos:]))
+
+        joined = '"".join([' + ', '.join(exprs) + '])'
+        func = eval(f'lambda ctx: {joined}', {'eval_code': self.eval_code})
+
+        if render_type == "int":
+            return lambda ctx: int(func(ctx))
+        elif render_type == "obj":
+            if last_expr:
+                return lambda ctx: self.eval_code(last_expr, ctx)
+            else:
+                return lambda ctx: None
+        else:
+            return lambda ctx: str(func(ctx))
 
 
 if __name__ == '__main__':
