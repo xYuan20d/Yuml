@@ -1,9 +1,13 @@
-__pycache__/
-.idea/
-.DS_Store
-lang/
-packages/
-pythonvenv/
-*.yaml
-/*.py
-*.ybc
+# 忽略所有内容
+/*
+
+# 允许这些目录
+!/YUML/
+!/demos/
+!/.github/
+
+# 允许这些文件
+!.gitignore
+!LICENSE
+!README.md
+!requirements.txt
