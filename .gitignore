@@ -11,3 +11,7 @@
 !LICENSE
 !README.md
 !requirements.txt
+
+# 不允许
+__pycache__/
+.DS_Store
