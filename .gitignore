@@ -1,11 +1,9 @@
-test.py
 __pycache__/
 .idea/
 .DS_Store
-main.py
-demo.py
 lang/
 packages/
 pythonvenv/
 *.yaml
+/*.py
 *.ybc
