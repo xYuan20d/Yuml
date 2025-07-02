@@ -5,6 +5,7 @@
 !/YUML/
 !/demos/
 !/.github/
+!tests
 
 # 允许这些文件
 !.gitignore
