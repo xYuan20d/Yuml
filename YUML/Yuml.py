@@ -728,7 +728,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
 
 
     def __init__(self, file_name: str, app: APPLICATION, load_str: bool = False,
-                 is_module: bool = False, _p: QWidget | None = None, _mode: str = "run"):
+                 is_module: bool = False, _p: QWidget | None = None):
         self.time = perf_counter()
         super().__init__(_p)
         self.version = (0, 0, 0, 1, "beta")
@@ -772,7 +772,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         else:
             self.yaml.load_file(file_name)
 
-        if (self.data is not None) and (_mode == "run"):
+        if self.data is not None:
             if "template" in self.data:
                 warn("template在新版本中被移除, 使用yaml锚点实现相同功能", category=Warns.YuanDeprecatedWarn)
 
@@ -781,9 +781,6 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             main_block = "run" if not is_module else "widget"
             self.call_block(main_block,
                             error=lambda: self.error_print(f"找不到主块: `{main_block}`", "mainBlockNotFound"))
-
-        elif _mode == "test":
-            pass
         else:
             self.error_print("文件为空", "NoneYumlError")
 
