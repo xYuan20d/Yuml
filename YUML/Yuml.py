@@ -1,5 +1,7 @@
 # coding: utf-8
 from time import perf_counter
+from traceback import TracebackException
+
 start_time = perf_counter()
 from platform import system
 system = system()
@@ -770,17 +772,17 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         else:
             self.yaml.load_file(file_name)
 
-        if "template" in self.data:
-            warn("template在新版本中被移除, 使用yaml锚点实现相同功能", category=Warns.YuanDeprecatedWarn)
+        if self.data is not None:
+            if "template" in self.data:
+                warn("template在新版本中被移除, 使用yaml锚点实现相同功能", category=Warns.YuanDeprecatedWarn)
 
-        self.definedDataBox()
-        self.definedQss()
-        if not is_module:
-            for i in self.data["run"]:
-                self.main_block(i, "run")
+            self.definedDataBox()
+            self.definedQss()
+            main_block = "run" if not is_module else "widget"
+            self.call_block(main_block,
+                            error=lambda: self.error_print(f"找不到主块: `{main_block}`", "mainBlockNotFound"))
         else:
-            for i in self.data["widget"]:
-                self.main_block(i, "widget")
+            self.error_print("文件为空", "NoneYumlError")
 
     def eval_code(self, code, _locals=None):
         return eval(code, self.eval_globals, _locals if _locals else {})
@@ -812,7 +814,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             self.error_print(f"{system}不受深色模式支持", "colorModeSystemError")
             return False
 
-    def call_block(self, scope, accept=None):
+    def call_block(self, scope, accept=None, error=None):
         if scope in self.data:
             for i in self.data[scope]:
                 if scope in self.block.notExecBlock:
@@ -823,7 +825,10 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 if return_value is not None:
                     return return_value
         else:
-            self.error_print(f"{scope}未找到", "NoRootBlockError")
+            if error is None:
+                self.error_print(f"`{scope}`未找到", "NoRootBlockError")
+            else:
+                error()
 
         return None
 
@@ -1501,7 +1506,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 eval_result = self.eval_code(m.group(1).strip())
                 return str(eval_result)
             except Exception as error:
-                self.error_print(error, "StringError")
+
+                self.error_print(f"\n{self._get_user_traceback_only(error)}", "StringError")
                 return ""
 
         is__rep = False
@@ -1529,6 +1535,9 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 return_value = _str
         except IndexError:
             return_value = _str
+        except Exception as e:
+            self.error_print(f"\n{self._get_user_traceback_only(e)}", "StringError")
+            return_value = ""
 
         return return_value
 
@@ -1573,6 +1582,22 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 return lambda ctx: None
         else:
             return lambda ctx: str(func(ctx))
+
+    @staticmethod
+    def _get_user_traceback_only(exc: Exception) -> str:
+        tb = TracebackException.from_exception(exc)
+        formatted = list(tb.format())
+        user_lines = []
+        found = False
+
+        for line in formatted:
+            if "<string>" in line:
+                found = True
+            if found:
+                user_lines.append(line)
+
+        # 只保留从 <string> 开始往后的 traceback 片段
+        return "".join(user_lines) if user_lines else "".join(tb.format_exception_only())
 
 
 if __name__ == '__main__':
