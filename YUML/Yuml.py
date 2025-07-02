@@ -839,86 +839,92 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 data = key[i]
                 key = i
                 data = {key: data}
-        match key:
-            case "show":  widget.setVisible(self.string(data[key]))
 
-            case "delGlobals":  self.API_G.delGlobals(self.string(data[key]))
+        try:
+            match key:
+                case "show":  widget.setVisible(self.string(data[key]))
 
-            case "move":
-                if isinstance(data[key], list):
-                    data = self.process_nested_list(data[key])
-                    widget.move(data[0], data[1])
-                else:
-                    widget.move(self.string(data[key]["x"]), self.string(data[key]["y"]))
+                case "delGlobals":  self.API_G.delGlobals(self.string(data[key]))
 
-            case "size":
-                if isinstance(data[key], list):
-                    data = self.process_nested_list(data[key])
-                    widget.resize(data[0], data[1])
-                else:
-                    widget.resize(self.string(data[key]["width"]), self.string(data[key]["height"]))
-
-            case "X":  widget.move(self.string(data[key]), widget.y())
-
-            case "Y":  widget.move(widget.x(), self.string(data[key]))
-
-            case "width":  widget.resize(self.string(data[key]), widget.height())
-
-            case "height":  widget.resize(widget.width(), self.string(data[key]))
-
-            case "moveTo":  widget.move(self.eval_code(data[key]).pos())
-
-            case "QssStyle":  widget.setStyleSheet(self.string(data[key]))
-
-            case "id":  widget.setObjectName(self.string(data[key]))
-
-            case "onMoved": widget.installEventFilter(MoveEventFilter(widget, self, data[key]))
-
-            case "styleTo":
-                _widget: QWidget = self.eval_code(data[key])
-                widget.setStyleSheet(_widget.styleSheet())
-                widget.setVisible(_widget.isVisible())
-                widget.setObjectName(_widget.objectName())
-                widget.resize(_widget.size())
-
-            case "name":
-                new_name = self.string(data[key])
-                self.API_G.globals(new_name, self.API_G.getGlobals(name))
-                self.API_G.delGlobals(name)
-                widget.YUML_WIDGET_NAME = new_name
-
-            case "onList":
-                self.API_G.getGlobals(self.string(data[key])).append(widget)
-                self.API_G.delGlobals(name)
-
-            case "darkStyle":
-                setattr(widget, "darkQssStyle", lambda _self, style=self.string(data[key]): _self.setStyleSheet(style))
-
-            case "lightStyle":
-                setattr(widget, "lightQssStyle", lambda _self, style=self.string(data[key]): _self.setStyleSheet(style))
-
-            case "parent":
-                widget.setParent(self.eval_code(data[key]))
-
-            case _:
-                def load_package():
-                    _is = None
-                    for _i in self.widgetBlock_block_module:
-                        if _i.__name__ == key:
-                            if _i().attribute(self, data[key], widget) is False:
-                                return None
-                            _is = True
-                            self.debug_print(f"加载Package Widget Block({key} {self.Symbols.RAW} ({_i})")
-                    return _is
-
-                if load_package() is None:
-                    if scope is not None:
-                        _scope = deepcopy(scope)
-                        _scope.append(name)
+                case "move":
+                    if isinstance(data[key], list):
+                        data = self.process_nested_list(data[key])
+                        widget.move(data[0], data[1])
                     else:
-                        _scope = None
-                    self.main_block(_raw_key, _scope, _is_yuml_widget=True
-                    if (isinstance(widget, LoadYmlFile) and key=="type") else False)
+                        widget.move(self.string(data[key]["x"]), self.string(data[key]["y"]))
+
+                case "size":
+                    if isinstance(data[key], list):
+                        data = self.process_nested_list(data[key])
+                        widget.resize(data[0], data[1])
+                    else:
+                        widget.resize(self.string(data[key]["width"]), self.string(data[key]["height"]))
+
+                case "X":  widget.move(self.string(data[key]), widget.y())
+
+                case "Y":  widget.move(widget.x(), self.string(data[key]))
+
+                case "width":  widget.resize(self.string(data[key]), widget.height())
+
+                case "height":  widget.resize(widget.width(), self.string(data[key]))
+
+                case "moveTo":  widget.move(self.eval_code(data[key]).pos())
+
+                case "QssStyle":  widget.setStyleSheet(self.string(data[key]))
+
+                case "id":  widget.setObjectName(self.string(data[key]))
+
+                case "onMoved": widget.installEventFilter(MoveEventFilter(widget, self, data[key]))
+
+                case "styleTo":
+                    _widget: QWidget = self.eval_code(data[key])
+                    widget.setStyleSheet(_widget.styleSheet())
+                    widget.setVisible(_widget.isVisible())
+                    widget.setObjectName(_widget.objectName())
+                    widget.resize(_widget.size())
+
+                case "name":
+                    new_name = self.string(data[key])
+                    self.API_G.globals(new_name, self.API_G.getGlobals(name))
+                    self.API_G.delGlobals(name)
+                    widget.YUML_WIDGET_NAME = new_name
+
+                case "onList":
+                    self.API_G.getGlobals(self.string(data[key])).append(widget)
+                    self.API_G.delGlobals(name)
+
+                case "darkStyle":
+                    setattr(widget, "darkQssStyle", lambda _self, style=
+                    self.string(data[key]): _self.setStyleSheet(style))
+
+                case "lightStyle":
+                    setattr(widget, "lightQssStyle", lambda _self, style=
+                    self.string(data[key]): _self.setStyleSheet(style))
+
+                case "parent":
+                    widget.setParent(self.eval_code(data[key]))
+
+                case _:
+                    def load_package():
+                        _is = None
+                        for _i in self.widgetBlock_block_module:
+                            if _i.__name__ == key:
+                                if _i().attribute(self, data[key], widget) is False:
+                                    return None
+                                _is = True
+                                self.debug_print(f"加载Package Widget Block({key} {self.Symbols.RAW} ({_i})")
+                        return _is
+
+                    if load_package() is None:
+                        if scope is not None:
+                            _scope = deepcopy(scope)
+                            _scope.append(name)
+                        else:
+                            _scope = None
+                        self.main_block(_raw_key, _scope, _is_yuml_widget=True
+                        if (isinstance(widget, LoadYmlFile) and key=="type") else False)
+        except Exception as e:
+            self.error_print(f"\n{self._get_user_traceback_only(e)}", "widgetAttrError")
 
     def create_widget(self, widget_type, data, scope, hook):
         def _onClicked(w, v):
