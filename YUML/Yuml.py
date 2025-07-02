@@ -63,7 +63,7 @@ APPLICATION = QApplication
 def signalCall(func: All, func2):
     """
     调用qt signalCall所设计, 起初是为了支持Lua使用
-    现Yuml已全面移植到PySide6, signalCall已弃用
+    现Yuml已全面移植到PySide6, signalCall已无太大用处
     """
     func.connect(func2)
 
