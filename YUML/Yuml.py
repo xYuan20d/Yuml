@@ -1,7 +1,5 @@
 # coding: utf-8
 from time import perf_counter
-from traceback import TracebackException
-
 start_time = perf_counter()
 from platform import system
 system = system()
@@ -17,7 +15,7 @@ from IPython import embed
 from lupa import LuaRuntime
 from jinja2 import Template
 from ruamel.yaml import YAML
-from functools import reduce
+from functools import reduce, partial
 from threading import Thread
 from datetime import datetime
 from typing import Any as All
@@ -27,6 +25,7 @@ from YUML.YmlAPIS.python import YAPP
 from contextlib import contextmanager
 from PySide6.QtGui import QFont, QIcon
 from inspect import isclass, getmembers
+from traceback import TracebackException
 from YUML.script.YuanGuiScript import Script  # 自定义语言
 from collections import OrderedDict, defaultdict
 from PySide6.QtCore import QTimer, QObject, QEvent
@@ -353,7 +352,7 @@ class APIS:
                 try:
                     self.window.API_G.globals(i, globals()[i])
                 except KeyError:
-                    raise NameError(f"`{i}`未找到")
+                    self.window.error_print(f"`{i}`未找到", "pythonModuleNameError")
 
         def setI18n(self, folder, file, default_file):
             """
@@ -1104,6 +1103,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 self.setWindowIcon(QIcon(self.string(data)))
             case "globalStyle":
                 self.setStyleSheet(self.string(data))
+            case "TO_PYTHON_FUNCTION":
+                self.set_hook(hook, partial(self.call_block, data))
             case "button":
                 self.cw.button(data, scope, hook)
             case "label":
