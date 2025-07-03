@@ -247,6 +247,10 @@ class APIS:
 
             :param folder: 包目录
             """
+            def y_command(_obj, _name):
+                _obj.__name__ = f"{_name}.{_obj.__name__}"
+                self.window.main_block_module.append(_obj)
+
             def reorder_with_priority(original_list, priority_list):
                 seen = set()
                 result = []
@@ -295,7 +299,8 @@ class APIS:
                     module.Y_NAMESPACE.YWidgetBlock: lambda _obj: self.window.widgetBlock_block_module.append(_obj),
                     module.Y_NAMESPACE.YAddWidgetAttribute:
                         lambda _obj: self.window.widget_add_block_module.append(_obj),
-                    module.Y_NAMESPACE.YExport: lambda _obj: self.window.export_module.append(_obj(self.window))
+                    module.Y_NAMESPACE.YExport: lambda _obj: self.window.export_module.append(_obj(self.window)),
+                    module.Y_NAMESPACE.YCommand: lambda _obj: y_command(_obj, i)
                 }
 
                 for name, obj in getmembers(module, isclass):
