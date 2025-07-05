@@ -765,7 +765,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self.API_APP = APIS.APP(self.app, self)
         self.lua_api = APIS.Lua(self.lua)
         self._G: dict = {"app": self.API_APP, "Console": APIS.Console(), "Lua": self.lua_api, "block":
-                        self.block, "window": super()}
+                        self.block, "window": self}
         self.eval_globals = {
             "window": self,
             "app": self.API_APP,
