@@ -637,6 +637,11 @@ class APIS:
             return value
 
         def updateGlobals(self, name: All, value: All) -> All:
+            """
+            更新Yuml Globals, 与globals直接覆盖不同, 会触发addUpdateList
+            :param name: Globals名
+            :param value: 值
+            """
             self._update(name, value)
             for i in self._globals:
                 for di, dv in i.items():
@@ -646,6 +651,11 @@ class APIS:
             return value
 
         def addUpdateList(self, name: All, value) -> All:
+            """
+            添加更新元素列表, 当调用updateGlobals时会同步使用
+            :param name: Globals名
+            :param value: 值(方法)
+            """
             self._globals.append({name: value})
             value(self.getGlobals(name))
 
@@ -663,7 +673,7 @@ class APIS:
         def delGlobals(self, name: All):
             """
             删除全局命名空间
-            :param name: 名称
+            :param name: Globals名
             """
             del self.eval[name]
             setattr(self.lua.globals(), name, None)
