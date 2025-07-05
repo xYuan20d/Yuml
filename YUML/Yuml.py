@@ -769,7 +769,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self.API_G = APIS.G(*self.global_args)
         self._G["_G"] = self.API_G
         self.cw = self.RWidgets(self.create_widget)
-        self.API_G.globals("YGlobals", self.API_G)
+        for i, v in {"YGlobals": self.API_G, "YUML_STRING": lambda x: self.string(x)}.items():
+            self.API_G.globals(i, v)
         self.data: dict | SQLiteDict = {}
         if load_str:
             self.yaml.load_str(file_name)
