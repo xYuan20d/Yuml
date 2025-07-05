@@ -599,12 +599,13 @@ class APIS:
             """
             self.notExecBlock.append(block)
 
-        def execBlockCode(self, block_code: str):
+        def execBlockCode(self, block_code: str) -> list:
             """
             执行string块
             :param block_code: 块代码
+            :return: list
             """
-            self.window.exec_code(self.window.yaml.load_str(block_code, True))
+            return self.window.get_all_hooks(self.window.yaml.load_str(block_code, True))
 
 
     class G:
