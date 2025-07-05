@@ -1488,6 +1488,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             {< True >} {< False >} :obj -> False
             hello {< name >} {< '!' >} :obj -> '!'
             {< name >}, hello{< '!' >} :obj -> '!'
+
+        谨防Yuml字符串渲染引擎注入
         """
 
         if not isinstance(s, str):
