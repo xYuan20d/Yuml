@@ -769,7 +769,8 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         self.eval_globals = {
             "window": self,
             "app": self.API_APP,
-            "Lua": self.lua_api
+            "Lua": self.lua_api,
+            "block": self.block
         }
         self.string_cache = OrderedDict()
         self.STRING_CACHE_LIMIT = 500
