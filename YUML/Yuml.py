@@ -29,6 +29,7 @@ from traceback import TracebackException
 from YUML.script.YuanGuiScript import Script  # 自定义语言
 from collections import OrderedDict, defaultdict
 from PySide6.QtCore import QTimer, QObject, QEvent
+from ruamel.yaml.scanner import ScannerError
 from os import chdir, environ, path, listdir, getpid
 from YUML.data.YSQLite import is_sqlite_file, SQLiteDict
 from qframelesswindow import AcrylicWindow, FramelessWindow
@@ -728,16 +729,21 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             return data
 
         def load_file(self, file_name, _rep=False):
-            if is_sqlite_file(file_name):
-                data = SQLiteDict(file_name, "YUML")
-                if not _rep:
-                    self.window.data = data
-            else:
-                with open(file_name, "r", encoding="UTF-8") as file:
-                    data = self.load(Template(file.read()).render())
+            try:
+                if is_sqlite_file(file_name):
+                    data = SQLiteDict(file_name, "YUML")
                     if not _rep:
-                        chdir(dirname(abspath(file_name)))
                         self.window.data = data
+                else:
+                    with open(file_name, "r", encoding="UTF-8") as file:
+                        data = self.load(Template(file.read()).render())
+                        if not _rep:
+                            chdir(dirname(abspath(file_name)))
+                            self.window.data = data
+            except ScannerError as e:
+                self.window.error_print(f"\n{self.window._get_user_traceback_only(e)}", "YamlError")
+                data = {"run": {}}
+                self.window.data = data
 
             return data
 
