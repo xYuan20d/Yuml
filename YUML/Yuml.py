@@ -1250,7 +1250,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
             case "QssStyle":
                 self.setStyleSheet(self.string(data))
             case "callBlock":
-                for i in [[self.string(x) for x in _list] for _list in data]:
+                for i in self.process_nested_list(data):
                     self.set_hook(hook, self.call_block(*i))
             case "CALL_BLOCK":
                 if isinstance(data, str):
