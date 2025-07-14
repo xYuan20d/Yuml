@@ -15,7 +15,7 @@ from IPython import embed
 from lupa import LuaRuntime
 from jinja2 import Template
 from ruamel.yaml import YAML
-from functools import reduce, partial
+from functools import reduce, partial, lru_cache
 from threading import Thread
 from datetime import datetime
 from typing import Any as All
@@ -807,8 +807,16 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
         else:
             self.error_print("文件为空", "NoneYumlError")
 
-    def eval_code(self, code, _locals=None):
-        return eval(code, self.eval_globals, _locals if _locals else {})
+    @lru_cache(maxsize=128)
+    def _compile_code(self, code_str, mode):
+        return compile(code_str, "<Yuml>", mode)
+
+    def eval_code(self, code, _locals=None, mode="eval"):
+        args = [self._compile_code(code, mode), self.eval_globals, _locals if _locals else {}]
+        if mode == "eval":
+            return eval(*args)
+        else:
+            return exec(*args)
 
     def error_print(self, msg: All, _id):
         if _id not in self.API_APP.notExecErrors:
@@ -1262,10 +1270,10 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 if isinstance(data, list):
                     value = self.eval_code(data[0])
                 elif isinstance(data, str):
-                    exec(data, self.eval_globals)
+                    self.eval_code(data, mode="exec")
                     value = None
                 else:
-                    self.error_print("PythonScript仅支持字符串或列表", "PythonScriptTypeError")
+                    self.error_print("PythonScript仅支持字符串和列表", "PythonScriptTypeError")
                     value = None
 
                 self.set_hook(hook, value)
