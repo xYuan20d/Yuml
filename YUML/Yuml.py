@@ -1266,6 +1266,9 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 else:
                     data = self.process_nested_list(data)
                     self.set_hook(hook, self.call_block(*data))
+            case "RUN_BLOCKS":
+                for i in data:
+                    self.exec_code(i)
             case "PythonScript":
                 if isinstance(data, list):
                     value = self.eval_code(data[0])
