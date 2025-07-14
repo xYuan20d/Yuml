@@ -15,7 +15,6 @@ from IPython import embed
 from lupa import LuaRuntime
 from jinja2 import Template
 from ruamel.yaml import YAML
-from functools import reduce, partial, lru_cache
 from threading import Thread
 from datetime import datetime
 from typing import Any as All
@@ -26,10 +25,11 @@ from contextlib import contextmanager
 from PySide6.QtGui import QFont, QIcon
 from inspect import isclass, getmembers
 from traceback import TracebackException
+from ruamel.yaml.scanner import ScannerError
 from YUML.script.YuanGuiScript import Script  # 自定义语言
+from functools import reduce, partial, lru_cache
 from collections import OrderedDict, defaultdict
 from PySide6.QtCore import QTimer, QObject, QEvent
-from ruamel.yaml.scanner import ScannerError
 from os import chdir, environ, path, listdir, getpid
 from YUML.data.YSQLite import is_sqlite_file, SQLiteDict
 from qframelesswindow import AcrylicWindow, FramelessWindow
