@@ -353,7 +353,7 @@ class APIS:
             :param python_code: 通过exec执行python导入代码
             :param module_name: 导入的模块, 空格隔开
             """
-            exec(python_code)
+            exec(python_code, globals())
             for i in module_name.split(" "):
                 try:
                     self.window.API_G.globals(i, globals()[i])
