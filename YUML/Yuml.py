@@ -1336,7 +1336,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                                     if isinstance(data, str):
                                         gl(block, self.eval_code(data))
                                     else:
-                                        gl(block, data)
+                                        gl(block, self.process_nested_list(data))
                             case "#":
                                 # HOOK的另一种写法
                                 self.exec_code(data, hook=block)
