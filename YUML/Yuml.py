@@ -174,6 +174,9 @@ class APIS:
         def run(self):
             self.app.exec_()
 
+        def updateWindow(self):
+            self.app.processEvents()
+
         def createWindow(self):
             self.window.show()
 
