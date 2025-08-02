@@ -848,7 +848,7 @@ class LoadYmlFile(FramelessWindow):  # dev继承自FramelessWindow / build时将
                 self.error_print(f"获取注册表出现了未知错误 {e}", "KeyError")
                 return False
         else:
-            self.error_print(f"{system}不受深色模式支持", "colorModeSystemError")
+            self.error_print(f"`{system}`不受深色模式支持", "colorModeSystemError")
             return False
 
     def call_block(self, scope, accept=None, error=None):
